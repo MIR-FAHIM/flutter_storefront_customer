@@ -147,7 +147,7 @@ class HomeView extends GetView<HomeController> {
                   title: "Featured Category",
                   actionText: "See All",
                   onTap: () {
-                    // Later: Get.toNamed(Routes.CATEGORY);
+                    // Get.toNamed(Routes.CATEGORY_VIEW);
                   },
                 ),
               ),

@@ -103,8 +103,10 @@ class LoginController extends GetxController {
   //   }
   // }
   getDeviceToken() async {
+    print("fcm is called");
     await FirebaseMessaging.instance.getToken().then((e) {
       deviceToken.value = e!;
+      print("fcm is called 344 ${deviceToken.value}");
     });
   }
 

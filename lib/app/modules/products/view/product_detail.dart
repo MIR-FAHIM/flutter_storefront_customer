@@ -3,38 +3,15 @@ import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.da
 import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/product_card_widget.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
+import 'package:ecom_user_flutter/app/services/html_sanitizer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html_parser;
 
-class ProductDetailPage extends StatefulWidget {
+class ProductDetailPage extends GetView<ProductController> {
   const ProductDetailPage({super.key});
-
-  @override
-  State<ProductDetailPage> createState() => _ProductDetailPageState();
-}
-
-class _ProductDetailPageState extends State<ProductDetailPage> {
-  final ProductController controller = Get.find<ProductController>();
-  final PageController _imagePageController = PageController();
-
-  int _currentImageIndex = 0;
-  bool _showFullDescription = false;
-
-  static const Color _primary = Color(0xFF00509D);
-  static const Color _navy = Color(0xFF151738);
-  static const Color _yellow = Color(0xFFFEFF00);
-  static const Color _softBlue = Color(0xFFB8CEE3);
-  static const Color _lightBlue = Color(0xFFEAF2FA);
-  static const Color _lightGrey = Color(0xFFF3F4F6);
-  static const Color _border = Color(0xFFE5E7EB);
-  static const Color _muted = Color(0xFF6B7280);
-  static const Color _gold = Color(0xFFFFC107);
-
-  @override
-  void dispose() {
-    _imagePageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,13 +43,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         );
       }
 
-      final images = _productImages(product);
-      final title = _productTitle(product);
-      final description = _productDescription(product);
-      final productId = _productId(product);
-      final maxStock = _productStock(product);
+      final images = _ProductDetailHelper._productImages(product);
+      final title = _ProductDetailHelper._productTitle(product);
+      final description = _ProductDetailHelper._productDescription(product);
+      final productId = _ProductDetailHelper._productId(product);
+      final maxStock = _ProductDetailHelper._productStock(product);
       final isOutOfStock = maxStock <= 0;
-      final unitPriceValue = _productUnitPriceValue(product);
+      final unitPriceValue = _ProductDetailHelper._productFinalUnitPriceValue(product);
 
       return Scaffold(
         backgroundColor: Colors.white,
@@ -90,14 +67,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               _ProductImageHeader(
                 images: images,
                 title: title,
-                currentIndex: _currentImageIndex,
-                pageController: _imagePageController,
                 isOutOfStock: isOutOfStock,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentImageIndex = index;
-                  });
-                },
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
@@ -125,18 +95,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     _TotalPriceBlock(
                       controller: controller,
                       unitPriceValue: unitPriceValue,
-                      fallbackPriceText: _currentPriceText(product),
+                      fallbackPriceText: _ProductDetailHelper._currentPriceText(product),
                     ),
                     const SizedBox(height: 12),
                     _DescriptionBlock(
                       title: title,
                       description: description,
-                      showFullDescription: _showFullDescription,
-                      onToggle: () {
-                        setState(() {
-                          _showFullDescription = !_showFullDescription;
-                        });
-                      },
                     ),
                     const SizedBox(height: 12),
                     _SmartInfoRows(product: product),
@@ -162,6 +126,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     });
   }
 
+
+}
+
+class _ProductDetailHelper {
   static dynamic _tryRead(dynamic Function() reader) {
     try {
       return reader();
@@ -205,10 +173,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   static String _productId(dynamic product) {
     return _clean(
       _firstValue([
-        () => product.id,
-        () => product.productId,
-        () => product['id'],
-        () => product['product_id'],
+            () => product.id,
+            () => product.productId,
+            () => product['id'],
+            () => product['product_id'],
       ]),
     );
   }
@@ -216,12 +184,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   static String _productTitle(dynamic product) {
     return _clean(
       _firstValue([
-        () => product.name,
-        () => product.title,
-        () => product.productName,
-        () => product['name'],
-        () => product['title'],
-        () => product['product_name'],
+            () => product.name,
+            () => product.title,
+            () => product.productName,
+            () => product['name'],
+            () => product['title'],
+            () => product['product_name'],
       ]),
       fallback: 'Product Details',
     );
@@ -230,29 +198,36 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   static String _productDescription(dynamic product) {
     final raw = _clean(
       _firstValue([
-        () => product.description,
-        () => product.shortDescription,
-        () => product.details,
-        () => product['description'],
-        () => product['short_description'],
-        () => product['details'],
+            () => product.description,
+            () => product.shortDescription,
+            () => product.details,
+            () => product['description'],
+            () => product['short_description'],
+            () => product['details'],
       ]),
-      fallback: 'No description available.',
     );
 
-    return _stripHtml(raw);
+    if (raw.isEmpty) {
+      return '<p>No description available.</p>';
+    }
+
+    return raw;
   }
 
   static String _currentPriceText(dynamic product) {
+    final finalPrice = _productFinalUnitPriceValue(product);
+
+    if (finalPrice > 0) {
+      return _formatMoney(finalPrice);
+    }
+
     final value = _firstValue([
-      () => product.mainPrice,
-      () => product.unitPrice,
-      () => product.price,
-      () => product.basePrice,
-      () => product['main_price'],
-      () => product['unit_price'],
-      () => product['price'],
-      () => product['base_price'],
+          () => product.mainPrice,
+          () => product.price,
+          () => product.basePrice,
+          () => product['main_price'],
+          () => product['price'],
+          () => product['base_price'],
     ]);
 
     return _money(value);
@@ -260,14 +235,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   static double _productUnitPriceValue(dynamic product) {
     final value = _firstValue([
-      () => product.unitPrice,
-      () => product.price,
-      () => product.basePrice,
-      () => product.mainPrice,
-      () => product['unit_price'],
-      () => product['price'],
-      () => product['base_price'],
-      () => product['main_price'],
+          () => product.unitPrice,
+          () => product.price,
+          () => product.basePrice,
+          () => product.mainPrice,
+          () => product['unit_price'],
+          () => product['price'],
+          () => product['base_price'],
+          () => product['main_price'],
     ]);
 
     return _toDouble(value);
@@ -275,14 +250,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   static int _productStock(dynamic product) {
     final value = _firstValue([
-      () => product.currentStock,
-      () => product.stock,
-      () => product.quantity,
-      () => product.qty,
-      () => product['current_stock'],
-      () => product['stock'],
-      () => product['quantity'],
-      () => product['qty'],
+          () => product.currentStock,
+          () => product.stock,
+          () => product.quantity,
+          () => product.qty,
+          () => product['current_stock'],
+          () => product['stock'],
+          () => product['quantity'],
+          () => product['qty'],
     ]);
 
     final raw = _clean(value);
@@ -299,15 +274,21 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   static String _oldPriceText(dynamic product) {
+    final unitPrice = _productUnitPriceValue(product);
+
+    if (_hasDiscount(product) && unitPrice > 0) {
+      return _formatMoney(unitPrice);
+    }
+
     final value = _firstValue([
-      () => product.strokedPrice,
-      () => product.oldPrice,
-      () => product.purchasePrice,
-      () => product.regularPrice,
-      () => product['stroked_price'],
-      () => product['old_price'],
-      () => product['purchase_price'],
-      () => product['regular_price'],
+          () => product.strokedPrice,
+          () => product.oldPrice,
+          () => product.purchasePrice,
+          () => product.regularPrice,
+          () => product['stroked_price'],
+          () => product['old_price'],
+          () => product['purchase_price'],
+          () => product['regular_price'],
     ]);
 
     return _money(value, allowEmpty: true);
@@ -316,50 +297,72 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   static String _discountText(dynamic product) {
     final direct = _clean(
       _firstValue([
-        () => product.discountText,
-        () => product.discountLabel,
-        () => product['discount_text'],
-        () => product['discount_label'],
+            () => product.discountText,
+            () => product.discountLabel,
+            () => product['discount_text'],
+            () => product['discount_label'],
       ]),
     );
 
     if (direct.isNotEmpty) return direct;
 
-    final discount = _clean(
-      _firstValue([
-        () => product.discount,
-        () => product.discountAmount,
-        () => product['discount'],
-        () => product['discount_amount'],
-      ]),
-    );
+    final discount = _productDiscountValue(product);
+    if (discount <= 0) return '';
 
-    if (discount.isEmpty || discount == '0' || discount == '0.0') {
-      return '';
+    final type = _productDiscountType(product).toLowerCase();
+    final isPercent = type.contains('percent') || type == '%';
+
+    if (isPercent) {
+      final clean = discount % 1 == 0
+          ? discount.toInt().toString()
+          : discount.toStringAsFixed(2);
+
+      return '$clean% OFF';
     }
 
-    final type = _clean(
+    return '${_formatMoney(discount)} OFF';
+  }
+
+  static double _productFinalUnitPriceValue(dynamic product) {
+    final unitPrice = _productUnitPriceValue(product);
+    final discount = _productDiscountValue(product);
+
+    if (unitPrice <= 0 || discount <= 0) return unitPrice;
+
+    final type = _productDiscountType(product).toLowerCase();
+    final isPercent = type.contains('percent') || type == '%';
+
+    final calculated = isPercent
+        ? unitPrice - ((unitPrice * discount) / 100)
+        : unitPrice - discount;
+
+    if (calculated < 0) return 0;
+
+    return calculated;
+  }
+
+  static bool _hasDiscount(dynamic product) {
+    return _productDiscountValue(product) > 0;
+  }
+
+  static double _productDiscountValue(dynamic product) {
+    final value = _firstValue([
+          () => product.discount,
+          () => product.discountAmount,
+          () => product['discount'],
+          () => product['discount_amount'],
+    ]);
+
+    return _toDouble(value);
+  }
+
+  static String _productDiscountType(dynamic product) {
+    return _clean(
       _firstValue([
-        () => product.discountType,
-        () => product['discount_type'],
+            () => product.discountType,
+            () => product['discount_type'],
       ]),
     );
-
-    final unit = _clean(
-      _firstValue([
-        () => product.unit,
-        () => product.unitName,
-        () => product['unit'],
-        () => product['unit_name'],
-      ]),
-    );
-
-    final isPercent = type.toLowerCase().contains('percent') || type == '%';
-
-    final discountPart = isPercent ? '-$discount%' : '-$discount';
-    final unitPart = unit.isEmpty ? '' : '/$unit';
-
-    return '$discountPart$unitPart';
   }
 
   static List<String> _productImages(dynamic product) {
@@ -374,28 +377,44 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     addImage(
       _firstValue([
-        () => product.primaryImage?.fileName,
-        () => product.primaryImage?.url,
-        () => product.primaryImage?.resolvedUrl,
-        () => product.thumbnailImage?.fileName,
-        () => product.thumbnailImage?.url,
-        () => product.thumbnailImage?.resolvedUrl,
-        () => product.image,
-        () => product.thumbnail,
-        () => product.photo,
-        () => product['primary_image']?['file_name'],
-        () => product['primary_image']?['url'],
-        () => product['primary_image']?['resolved_url'],
-        () => product['thumbnail_image']?['file_name'],
-        () => product['thumbnail_image']?['url'],
-        () => product['thumbnail_image']?['resolved_url'],
-        () => product['image'],
-        () => product['thumbnail'],
-        () => product['photo'],
+            () => product.primaryImage?.url,
+            () => product.primaryImage?.fileName,
+            () => product.primaryImage?.resolvedUrl(
+          baseUrl: CompanyData.image_file_url,
+        ),
+            () => product.thumbnailImage?.url,
+            () => product.thumbnailImage?.fileName,
+            () => product.image,
+            () => product.thumbnail,
+            () => product.photo,
+            () => product['primary_image']?['url'],
+            () => product['primary_image']?['file_name'],
+            () => product['primary_image']?['resolved_url'],
+            () => product['thumbnail_image']?['url'],
+            () => product['thumbnail_image']?['file_name'],
+            () => product['thumbnail_image']?['resolved_url'],
+            () => product['image'],
+            () => product['thumbnail'],
+            () => product['photo'],
       ]),
     );
 
-    debugPrint("Product detail image list: $images");
+    final gallery = _tryRead(() => product.images);
+
+    if (gallery is Iterable) {
+      for (final item in gallery) {
+        addImage(
+          _firstValue([
+                () => item.url,
+                () => item.fileName,
+                () => item.resolvedUrl(baseUrl: CompanyData.image_file_url),
+                () => item['url'],
+                () => item['file_name'],
+                () => item['resolved_url'],
+          ]),
+        );
+      }
+    }
 
     return images;
   }
@@ -411,9 +430,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     final base = CompanyData.image_file_url.endsWith('/')
         ? CompanyData.image_file_url.substring(
-            0,
-            CompanyData.image_file_url.length - 1,
-          )
+      0,
+      CompanyData.image_file_url.length - 1,
+    )
         : CompanyData.image_file_url;
 
     final path = raw.startsWith('/') ? raw.substring(1) : raw;
@@ -440,7 +459,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     if (raw.isEmpty) return 0;
 
-    final cleaned = raw.replaceAll(RegExp(r'[^0-9.]'), '');
+    final cleaned = raw.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
     return double.tryParse(cleaned) ?? 0;
   }
 
@@ -465,26 +484,47 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 }
 
-class _ProductImageHeader extends StatelessWidget {
+
+class _ProductImageHeader extends StatefulWidget {
   const _ProductImageHeader({
     required this.images,
     required this.title,
-    required this.currentIndex,
-    required this.pageController,
     required this.isOutOfStock,
-    required this.onPageChanged,
   });
 
   final List<String> images;
   final String title;
-  final int currentIndex;
-  final PageController pageController;
   final bool isOutOfStock;
-  final ValueChanged<int> onPageChanged;
+
+  @override
+  State<_ProductImageHeader> createState() => _ProductImageHeaderState();
+}
+
+class _ProductImageHeaderState extends State<_ProductImageHeader> {
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
 
   static const Color _primary = Color(0xFF00509D);
   static const Color _yellow = Color(0xFFFEFF00);
-  static const Color _navy = Color(0xFF151738);
+
+  @override
+  void didUpdateWidget(covariant _ProductImageHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.images != widget.images) {
+      _currentIndex = 0;
+
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -496,50 +536,44 @@ class _ProductImageHeader extends StatelessWidget {
         children: [
           Positioned.fill(
             top: 64,
-            child: images.isEmpty
+            child: widget.images.isEmpty
                 ? const _ImagePlaceholder()
                 : PageView.builder(
-                    controller: pageController,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: images.length,
-                    onPageChanged: onPageChanged,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 34,
-                          vertical: 8,
-                        ),
-                        child: Builder(
-                          builder: (_) {
-                            final imageUrl = images[index];
+              controller: _pageController,
+              physics: const BouncingScrollPhysics(),
+              itemCount: widget.images.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                final imageUrl = widget.images[index];
 
-                            debugPrint(
-                                "Showing product detail image: $imageUrl");
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 34,
+                    vertical: 8,
+                  ),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
 
-                            return Image.network(
-                              imageUrl,
-                              fit: BoxFit.contain,
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-
-                                return const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (_, error, stackTrace) {
-                                debugPrint("Image load failed: $imageUrl");
-                                debugPrint("Image error: $error");
-
-                                return const _ImagePlaceholder();
-                              },
-                            );
-                          },
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
                         ),
                       );
                     },
+                    errorBuilder: (_, __, ___) {
+                      return const _ImagePlaceholder();
+                    },
                   ),
+                );
+              },
+            ),
           ),
           Positioned(
             left: 14,
@@ -576,18 +610,20 @@ class _ProductImageHeader extends StatelessWidget {
             right: 0,
             bottom: 18,
             child: _DotsIndicator(
-              count: images.isEmpty ? 1 : images.length,
-              currentIndex: currentIndex,
+              count: widget.images.isEmpty ? 1 : widget.images.length,
+              currentIndex: _currentIndex,
             ),
           ),
-          if (isOutOfStock)
+          if (widget.isOutOfStock)
             Positioned(
               left: 24,
               right: 24,
               bottom: 54,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE11D48),
                   borderRadius: BorderRadius.circular(14),
@@ -765,7 +801,7 @@ class _DotsIndicator extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
         count > 5 ? 5 : count,
-        (index) {
+            (index) {
           final active = index == currentIndex;
 
           return AnimatedContainer(
@@ -816,35 +852,35 @@ class _RatingSoldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rating = _ProductDetailPageState._toDouble(
-      _ProductDetailPageState._firstValue([
-        () => product.rating,
-        () => product.averageRating,
-        () => product.avgRating,
-        () => product['rating'],
-        () => product['average_rating'],
+    final rating = _ProductDetailHelper._toDouble(
+      _ProductDetailHelper._firstValue([
+            () => product.rating,
+            () => product.averageRating,
+            () => product.avgRating,
+            () => product['rating'],
+            () => product['average_rating'],
       ]),
     );
 
-    final reviewCount = _ProductDetailPageState._clean(
-      _ProductDetailPageState._firstValue([
-        () => product.reviewCount,
-        () => product.reviewsCount,
-        () => product.reviews,
-        () => product['review_count'],
-        () => product['reviews_count'],
+    final reviewCount = _ProductDetailHelper._clean(
+      _ProductDetailHelper._firstValue([
+            () => product.reviewCount,
+            () => product.reviewsCount,
+            () => product.reviews,
+            () => product['review_count'],
+            () => product['reviews_count'],
       ]),
       fallback: '0',
     );
 
-    final soldCount = _ProductDetailPageState._clean(
-      _ProductDetailPageState._firstValue([
-        () => product.numOfSale,
-        () => product.sold,
-        () => product.totalSold,
-        () => product['num_of_sale'],
-        () => product['sold'],
-        () => product['total_sold'],
+    final soldCount = _ProductDetailHelper._clean(
+      _ProductDetailHelper._firstValue([
+            () => product.numOfSale,
+            () => product.sold,
+            () => product.totalSold,
+            () => product['num_of_sale'],
+            () => product['sold'],
+            () => product['total_sold'],
       ]),
       fallback: '0',
     );
@@ -853,7 +889,7 @@ class _RatingSoldRow extends StatelessWidget {
       children: [
         ...List.generate(
           5,
-          (index) {
+              (index) {
             return Icon(
               index < rating.round() ? Icons.star_rounded : Icons.star_rounded,
               size: 15,
@@ -901,9 +937,9 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentPrice = _ProductDetailPageState._currentPriceText(product);
-    final oldPrice = _ProductDetailPageState._oldPriceText(product);
-    final discount = _ProductDetailPageState._discountText(product);
+    final currentPrice = _ProductDetailHelper._currentPriceText(product);
+    final oldPrice = _ProductDetailHelper._oldPriceText(product);
+    final discount = _ProductDetailHelper._discountText(product);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -941,9 +977,9 @@ class _PriceRow extends StatelessWidget {
                 discount,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF00509D),
-                  fontWeight: FontWeight.w900,
+                style:  TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w500,
                   fontSize: 18,
                 ),
               ),
@@ -964,27 +1000,27 @@ class _SellerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sellerName = _ProductDetailPageState._clean(
-      _ProductDetailPageState._firstValue([
-        () => product.shop?.name,
-        () => product.seller?.name,
-        () => product.addedBy,
-        () => product.sellerName,
-        () => product['shop']?['name'],
-        () => product['seller']?['name'],
-        () => product['added_by'],
-        () => product['seller_name'],
+    final sellerName = _ProductDetailHelper._clean(
+      _ProductDetailHelper._firstValue([
+            () => product.shop?.shopName,
+            () => product.seller?.name,
+            () => product.addedBy,
+            () => product.sellerName,
+            () => product['shop']?['name'],
+            () => product['seller']?['name'],
+            () => product['added_by'],
+            () => product['seller_name'],
       ]),
       fallback: 'Color Crush',
     );
 
-    final sellerImage = _ProductDetailPageState._clean(
-      _ProductDetailPageState._firstValue([
-        () => product.shop?.logo?.resolvedUrl,
-        () => product.shop?.logo?.url,
-        () => product.seller?.avatar,
-        () => product['shop']?['logo']?['resolved_url'],
-        () => product['shop']?['logo']?['url'],
+    final sellerImage = _ProductDetailHelper._clean(
+      _ProductDetailHelper._firstValue([
+            () => product.shop?.logo?.resolvedUrl,
+            () => product.shop?.logo?.url,
+            () => product.seller?.avatar,
+            () => product['shop']?['logo']?['resolved_url'],
+            () => product['shop']?['logo']?['url'],
       ]),
     );
 
@@ -1007,21 +1043,21 @@ class _SellerCard extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: sellerImage.isEmpty
                 ? const Icon(
-                    Icons.storefront_rounded,
-                    color: Color(0xFF00509D),
-                    size: 22,
-                  )
+              Icons.storefront_rounded,
+              color: Color(0xFF00509D),
+              size: 22,
+            )
                 : Image.network(
-                    sellerImage,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                      return const Icon(
-                        Icons.storefront_rounded,
-                        color: Color(0xFF00509D),
-                        size: 22,
-                      );
-                    },
-                  ),
+              sellerImage,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) {
+                return const Icon(
+                  Icons.storefront_rounded,
+                  color: Color(0xFF00509D),
+                  size: 22,
+                );
+              },
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1030,7 +1066,7 @@ class _SellerCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "seller",
+                  "Manufacturer",
                   style: TextStyle(
                     color: Color(0xFF6B7280),
                     fontWeight: FontWeight.w700,
@@ -1053,19 +1089,8 @@ class _SellerCard extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            height: 30,
-            width: 30,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.messenger_outline_rounded,
-              color: Color(0xFF00509D),
-              size: 18,
-            ),
-          ),
+
+
         ],
       ),
     );
@@ -1122,7 +1147,9 @@ class _QuantityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
+
+    if(isOutOfStock == true){
+
       return Row(
         children: [
           const Text(
@@ -1155,8 +1182,8 @@ class _QuantityRow extends StatelessWidget {
             onTap: isOutOfStock
                 ? null
                 : () {
-                    controller.increaseQty(maxStock: maxStock);
-                  },
+              controller.increaseQty(maxStock: maxStock);
+            },
           ),
           const SizedBox(width: 14),
           Text(
@@ -1171,7 +1198,60 @@ class _QuantityRow extends StatelessWidget {
           ),
         ],
       );
-    });
+
+    }else{
+      return Obx(() {
+        return Row(
+          children: [
+            const Text(
+              "Quantity",
+              style: TextStyle(
+                color: Color(0xFF00509D),
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 20),
+            _QtyButton(
+              icon: Icons.remove_rounded,
+              onTap: isOutOfStock ? null : controller.decreaseQty,
+            ),
+            const SizedBox(width: 14),
+            Text(
+              isOutOfStock ? '0' : controller.quantity.value.toString(),
+              style: TextStyle(
+                color: isOutOfStock
+                    ? const Color(0xFF9CA3AF)
+                    : const Color(0xFF00509D),
+                fontWeight: FontWeight.w900,
+                fontSize: 17,
+              ),
+            ),
+            const SizedBox(width: 14),
+            _QtyButton(
+              icon: Icons.add_rounded,
+              onTap: isOutOfStock
+                  ? null
+                  : () {
+                controller.increaseQty(maxStock: maxStock);
+              },
+            ),
+            const SizedBox(width: 14),
+            Text(
+              isOutOfStock ? '(Stock Out)' : "($maxStock)",
+              style: TextStyle(
+                color: isOutOfStock
+                    ? const Color(0xFFE11D48)
+                    : const Color(0xFF7B8DA3),
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        );
+      });
+    }
+
   }
 }
 
@@ -1220,7 +1300,7 @@ class _TotalPriceBlock extends StatelessWidget {
     return Obx(() {
       final qty = controller.quantity.value;
       final total = unitPriceValue > 0
-          ? _ProductDetailPageState._formatMoney(unitPriceValue * qty)
+          ? _ProductDetailHelper._formatMoney(unitPriceValue * qty)
           : fallbackPriceText;
 
       return Container(
@@ -1257,77 +1337,474 @@ class _TotalPriceBlock extends StatelessWidget {
   }
 }
 
-class _DescriptionBlock extends StatelessWidget {
+class _DescriptionBlock extends StatefulWidget {
   const _DescriptionBlock({
     required this.title,
     required this.description,
-    required this.showFullDescription,
-    required this.onToggle,
   });
 
   final String title;
   final String description;
-  final bool showFullDescription;
-  final VoidCallback onToggle;
+
+  @override
+  State<_DescriptionBlock> createState() =>
+      _DescriptionBlockState();
+}
+
+class _DescriptionBlockState
+    extends State<_DescriptionBlock> {
+  static const Color _primary = Color(0xFF00509D);
+  static const Color _border = Color(0xFFE5E7EB);
+  static const Color _background = Color(0xFFF8FAFC);
+
+  static const double _collapsedHeight = 190;
+
+  bool _isExpanded = false;
+
+  String get _safeHtml {
+    final normalised = _normaliseHtml(
+      widget.description,
+    );
+
+    return ProductHtmlSanitizer.sanitize(
+      normalised,
+    );
+  }
+
+  String get _plainText {
+    try {
+      return html_parser
+          .parse(_safeHtml)
+          .body
+          ?.text
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim() ??
+          '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  bool get _hasDescription {
+    final value = _plainText.toLowerCase();
+
+    return value.isNotEmpty &&
+        value != 'null' &&
+        value != 'no description available.';
+  }
+
+  bool get _shouldShowToggle {
+    final html = _safeHtml.toLowerCase();
+
+    return _plainText.length > 220 ||
+        html.contains('<img') ||
+        html.contains('<table') ||
+        html.contains('<ul') ||
+        html.contains('<ol') ||
+        html.contains('<h1') ||
+        html.contains('<h2') ||
+        html.contains('<h3');
+  }
+
+  @override
+  void didUpdateWidget(
+      covariant _DescriptionBlock oldWidget,
+      ) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.description != widget.description) {
+      _isExpanded = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final shouldShowToggle = description.length > 90;
+    if (!_hasDescription) {
+      return const SizedBox.shrink();
+    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Description",
-          style: TextStyle(
-            color: Color(0xFF00509D),
-            fontWeight: FontWeight.w900,
-            fontSize: 14,
-          ),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _border,
         ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF00509D),
-            fontWeight: FontWeight.w900,
-            fontSize: 13,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.035),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          description,
-          maxLines: showFullDescription ? null : 2,
-          overflow: showFullDescription
-              ? TextOverflow.visible
-              : TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF00509D),
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
-            height: 1.35,
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: _border,
           ),
-        ),
-        if (shouldShowToggle) ...[
-          const SizedBox(height: 3),
-          Align(
-            alignment: Alignment.centerRight,
-            child: InkWell(
-              onTap: onToggle,
-              child: Text(
-                showFullDescription ? "See Less" : "See All",
-                style: const TextStyle(
-                  color: Color(0xFF00509D),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              14,
+              10,
+              14,
+              0,
+            ),
+            child: AnimatedSize(
+              duration: const Duration(
+                milliseconds: 280,
+              ),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: _buildDescriptionContent(),
+            ),
+          ),
+
+          if (_shouldShowToggle)
+            _buildToggleButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 13,
+      ),
+      color: _background,
+      child: const Row(
+        children: [
+          _DescriptionIcon(),
+
+          SizedBox(width: 10),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Product Description',
+                  style: TextStyle(
+                    color: _primary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Details, specifications and features',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionContent() {
+    if (_isExpanded || !_shouldShowToggle) {
+      return _buildHtml();
+    }
+
+    return SizedBox(
+      height: _collapsedHeight,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRect(
+              child: SingleChildScrollView(
+                physics:
+                const NeverScrollableScrollPhysics(),
+                child: _buildHtml(),
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 65,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x00FFFFFF),
+                      Color(0xD9FFFFFF),
+                      Colors.white,
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ],
-      ],
+      ),
+    );
+  }
+
+  Widget _buildHtml() {
+    return Html(
+      data: _safeHtml,
+      shrinkWrap: true,
+      style: {
+        'html': Style(
+          margin: Margins.zero,
+          padding: HtmlPaddings.zero,
+        ),
+        'body': Style(
+          margin: Margins.zero,
+          padding: HtmlPaddings.zero,
+          color: const Color(0xFF334155),
+          fontSize: FontSize(13),
+          lineHeight: const LineHeight(1.55),
+        ),
+        'p': Style(
+          margin: Margins.only(
+            top: 0,
+            bottom: 10,
+          ),
+          padding: HtmlPaddings.zero,
+        ),
+        'h1': Style(
+          margin: Margins.only(
+            top: 8,
+            bottom: 8,
+          ),
+        ),
+        'h2': Style(
+          margin: Margins.only(
+            top: 8,
+            bottom: 8,
+          ),
+        ),
+        'h3': Style(
+          margin: Margins.only(
+            top: 7,
+            bottom: 7,
+          ),
+        ),
+        'h4': Style(
+          margin: Margins.only(
+            top: 6,
+            bottom: 6,
+          ),
+        ),
+        'ul': Style(
+          margin: Margins.only(
+            top: 4,
+            bottom: 10,
+            left: 18,
+          ),
+          padding: HtmlPaddings.zero,
+        ),
+        'ol': Style(
+          margin: Margins.only(
+            top: 4,
+            bottom: 10,
+            left: 18,
+          ),
+          padding: HtmlPaddings.zero,
+        ),
+        'li': Style(
+          margin: Margins.only(
+            bottom: 5,
+          ),
+          lineHeight: const LineHeight(1.45),
+        ),
+        'img': Style(
+          width: Width(
+            100,
+            Unit.percent,
+          ),
+          height: Height.auto(),
+          margin: Margins.symmetric(
+            vertical: 10,
+          ),
+        ),
+        'table': Style(
+          width: Width(
+            100,
+            Unit.percent,
+          ),
+          margin: Margins.symmetric(
+            vertical: 10,
+          ),
+        ),
+        'th': Style(
+          padding: HtmlPaddings.all(8),
+          backgroundColor:
+          const Color(0xFFEAF2FA),
+        ),
+        'td': Style(
+          padding: HtmlPaddings.all(8),
+        ),
+        'blockquote': Style(
+          margin: Margins.symmetric(
+            vertical: 8,
+          ),
+          padding: HtmlPaddings.only(
+            left: 12,
+            top: 8,
+            right: 8,
+            bottom: 8,
+          ),
+          backgroundColor:
+          const Color(0xFFF1F5F9),
+          border: const Border(
+            left: BorderSide(
+              color: _primary,
+              width: 3,
+            ),
+          ),
+        ),
+        'a': Style(
+          color: _primary,
+          textDecoration:
+          TextDecoration.underline,
+        ),
+      },
+      onLinkTap: (
+          url,
+          attributes,
+          element,
+          ) {
+        debugPrint(
+          'Description link tapped: $url',
+        );
+      },
+    );
+  }
+
+  Widget _buildToggleButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        14,
+        4,
+        14,
+        12,
+      ),
+      child: Align(
+        alignment: Alignment.center,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.08),
+                borderRadius:
+                BorderRadius.circular(30),
+                border: Border.all(
+                  color:
+                  _primary.withOpacity(0.15),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isExpanded
+                        ? 'Show Less'
+                        : 'View Full Description',
+                    style: const TextStyle(
+                      color: _primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+
+                  const SizedBox(width: 5),
+
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(
+                      milliseconds: 220,
+                    ),
+                    child: const Icon(
+                      Icons
+                          .keyboard_arrow_down_rounded,
+                      color: _primary,
+                      size: 19,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _normaliseHtml(String value) {
+    var html = value.trim();
+
+    if (html.isEmpty ||
+        html.toLowerCase() == 'null') {
+      return '';
+    }
+
+    html = html
+        .replaceAll(r'\r\n', '\n')
+        .replaceAll(r'\n', '\n')
+        .replaceAll(r'\t', '\t')
+        .replaceAll(r'\"', '"')
+        .replaceAll(r"\'", "'");
+
+    return html;
+  }
+}
+
+class _DescriptionIcon extends StatelessWidget {
+  const _DescriptionIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: const Color(0xFF00509D)
+            .withOpacity(0.10),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: const Icon(
+        Icons.description_outlined,
+        color: Color(0xFF00509D),
+        size: 21,
+      ),
     );
   }
 }
@@ -1346,12 +1823,12 @@ class _SmartInfoRows extends StatelessWidget {
         _SmartInfoTile(
           title: "Video",
           child: _SimpleInfoText(
-            text: _ProductDetailPageState._clean(
-              _ProductDetailPageState._firstValue([
-                () => product.videoLink,
-                () => product.video,
-                () => product['video_link'],
-                () => product['video'],
+            text: _ProductDetailHelper._clean(
+              _ProductDetailHelper._firstValue([
+                    () => product.videoLink,
+                    () => product.video,
+                    () => product['video_link'],
+                    () => product['video'],
               ]),
               fallback: 'No video available for this product.',
             ),
@@ -1486,18 +1963,18 @@ class _RelatedProductsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final filtered = products
         .where((item) {
-          final dynamic product = item;
-          final id = _ProductDetailPageState._clean(
-            _ProductDetailPageState._firstValue([
+      final dynamic product = item;
+      final id = _ProductDetailHelper._clean(
+        _ProductDetailHelper._firstValue([
               () => product.id,
               () => product.productId,
               () => product['id'],
               () => product['product_id'],
-            ]),
-          );
+        ]),
+      );
 
-          return id != currentProductId;
-        })
+      return id != currentProductId;
+    })
         .take(8)
         .toList();
 
@@ -1541,18 +2018,18 @@ class _TopSellingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final filtered = products
         .where((item) {
-          final dynamic product = item;
-          final id = _ProductDetailPageState._clean(
-            _ProductDetailPageState._firstValue([
+      final dynamic product = item;
+      final id = _ProductDetailHelper._clean(
+        _ProductDetailHelper._firstValue([
               () => product.id,
               () => product.productId,
               () => product['id'],
               () => product['product_id'],
-            ]),
-          );
+        ]),
+      );
 
-          return id != currentProductId;
-        })
+      return id != currentProductId;
+    })
         .take(5)
         .toList();
 
@@ -1586,16 +2063,16 @@ class _TopSellingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _ProductDetailPageState._productTitle(product);
-    final price = _ProductDetailPageState._currentPriceText(product);
-    final oldPrice = _ProductDetailPageState._oldPriceText(product);
-    final discount = _ProductDetailPageState._discountText(product);
-    final images = _ProductDetailPageState._productImages(product);
+    final title = _ProductDetailHelper._productTitle(product);
+    final price = _ProductDetailHelper._currentPriceText(product);
+    final oldPrice = _ProductDetailHelper._oldPriceText(product);
+    final discount = _ProductDetailHelper._discountText(product);
+    final images = _ProductDetailHelper._productImages(product);
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () {
-        final id = _ProductDetailPageState._productId(product);
+        final id = _ProductDetailHelper._productId(product);
 
         if (id.isNotEmpty) {
           final productId = int.tryParse(id);
@@ -1625,12 +2102,12 @@ class _TopSellingCard extends StatelessWidget {
               child: images.isEmpty
                   ? const _ImagePlaceholder()
                   : Image.network(
-                      images.first,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) {
-                        return const _ImagePlaceholder();
-                      },
-                    ),
+                images.first,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) {
+                  return const _ImagePlaceholder();
+                },
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1679,9 +2156,9 @@ class _TopSellingCard extends StatelessWidget {
                             discount,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF00509D),
-                              fontWeight: FontWeight.w900,
+                            style:  TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w500,
                               fontSize: 13,
                             ),
                           ),
@@ -1824,20 +2301,20 @@ class _BottomActionBar extends StatelessWidget {
                   onPressed: controller.isCartLoading.value || isOutOfStock
                       ? null
                       : () {
-                          if (productId.isEmpty) {
-                            Get.snackbar(
-                              'Error',
-                              'Product ID not found',
-                              snackPosition: SnackPosition.BOTTOM,
-                            );
-                            return;
-                          }
+                    if (productId.isEmpty) {
+                      Get.snackbar(
+                        'Error',
+                        'Product ID not found',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                      return;
+                    }
 
-                          controller.addToCart(
-                            productId: productId,
-                            qty: controller.quantity.value,
-                          );
-                        },
+                    controller.addToCart(
+                      productId: productId,
+                      qty: controller.quantity.value,
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isOutOfStock
                         ? const Color(0xFFCBD5E1)
@@ -1853,20 +2330,20 @@ class _BottomActionBar extends StatelessWidget {
                   ),
                   child: controller.isCartLoading.value
                       ? const SizedBox(
-                          height: 19,
-                          width: 19,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                    height: 19,
+                    width: 19,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                       : Text(
-                          isOutOfStock ? "Stock Out" : "Add To Cart",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                          ),
-                        ),
+                    isOutOfStock ? "Stock Out" : "Add To Cart",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
                 );
               }),
             ),

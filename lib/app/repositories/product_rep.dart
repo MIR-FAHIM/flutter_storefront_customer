@@ -150,6 +150,7 @@ getBrands() async {
     final response = await manager.getWithHeaderAndParam(
       ApiClient.todayDealProducts,
       params: {
+        'todays_deal' : 1,
         'page': page,
         'per_page': perPage,
         if (shopId != null) 'shop_id': shopId,

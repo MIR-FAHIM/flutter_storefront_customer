@@ -85,7 +85,7 @@ class ProfileView extends GetView<HomeController> {
                       ),
                     ),
                     onPressed: () {
-                      Get.offAllNamed(Routes.SPLASHSCREEN);
+                      Get.offAllNamed(Routes.LOGIN);
                     },
                     child: const Text(
                       "Go to Login",

@@ -36,7 +36,7 @@ class ProductCard extends GetWidget<ProductController> {
 
   num _discountedPrice({
     required num price,
-    required num discount,
+    required double discount,
     required String? discountType,
   }) {
     if (discount <= 0) return price;
@@ -72,7 +72,7 @@ class ProductCard extends GetWidget<ProductController> {
     );
 
     final price = product.unitPrice;
-    final discount = product.discount;
+    final discount = product.discount ?? 0;
     final hasDiscount = discount > 0;
 
     final finalPrice = _discountedPrice(
@@ -81,15 +81,16 @@ class ProductCard extends GetWidget<ProductController> {
       discountType: product.discountType,
     );
 
-    final name = product.name.trim();
+    final name = (product.name ?? '').trim();
     final unit = (product.unit ?? '').trim();
 
     final rating = product.rating;
     final sold = product.numOfSale;
 
-    final shopName = (product.addedBy ?? '').trim().isEmpty
+    final shopName = (product.shop?.name ?? product.addedBy ?? '').trim().isEmpty
         ? 'Shop Name'
-        : product.addedBy!.trim();
+        : (product.shop?.name ?? product.addedBy ?? '').trim();
+
     final isOutOfStock = product.currentStock <= 0;
 
     return Material(
@@ -265,6 +266,8 @@ class ProductCard extends GetWidget<ProductController> {
                               ),
                             ),
                             const SizedBox(width: 3),
+                            Container(height: 10, width: 1, color: Colors.black,),
+                            const SizedBox(width: 3),
                             Text(
                               '$sold sold',
                               style: TextStyle(
@@ -274,11 +277,12 @@ class ProductCard extends GetWidget<ProductController> {
                                 height: 1,
                               ),
                             ),
-                            const Spacer(),
-                            Flexible(
-                              child: _ShopPill(text: shopName),
-                            ),
+
+
                           ],
+                        ),
+                        Flexible(
+                          child: _ShopPill(text: shopName),
                         ),
                       ],
                     ),

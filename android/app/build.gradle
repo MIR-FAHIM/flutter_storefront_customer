@@ -1,8 +1,11 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    // This replaces the old "apply from: flutter.gradle"
+    id "dev.flutter.flutter-gradle-plugin"
+
+    // If you use Firebase/Play services, apply here (version lives in settings.gradle)
+    id "com.google.gms.google-services"
 }
 
 
@@ -66,14 +69,15 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    // implementation 'com.google.android.gms:play-services-mlkit-text-recognition:17.0.0'
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
-    implementation 'com.facebook.android:facebook-android-sdk:latest.release'
-    implementation 'com.android.support:multidex:2.0.1'
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Let the Kotlin plugin control the version; don’t hardcode $kotlin_version
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 
+    // Use AndroidX Multidex (not the old support library)
+    implementation "androidx.multidex:multidex:2.0.1"
 
-    // required for flutter_local_notifications Java 8+ APIs
+    // Your ML Kit / Firebase stack
+    implementation platform("com.google.firebase:firebase-bom:31.1.1")
+    implementation "com.google.android.gms:play-services-mlkit-text-recognition:18.0.0"
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
 }

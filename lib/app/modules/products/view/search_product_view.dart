@@ -23,11 +23,8 @@ class ProductFilterPage extends GetView<ProductController> {
         child: Column(
           children: [
             _HeaderSearch(controller: controller),
-
             _FilterArea(controller: controller),
-
             _ResultHeader(controller: controller),
-
             Expanded(
               child: Obx(() {
                 if (controller.isFilterLoading.value &&
@@ -139,9 +136,7 @@ class _HeaderSearch extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 10),
-
               Expanded(
                 child: Text(
                   'All Products',
@@ -152,7 +147,6 @@ class _HeaderSearch extends StatelessWidget {
                   ),
                 ),
               ),
-
               Obx(() {
                 return Text(
                   '${controller.filterTotal.value}',
@@ -165,9 +159,7 @@ class _HeaderSearch extends StatelessWidget {
               }),
             ],
           ),
-
           const SizedBox(height: 12),
-
           TextField(
             controller: controller.searchCtrl.value,
             onChanged: controller.onSearchChanged,
@@ -258,9 +250,7 @@ class _FilterArea extends StatelessWidget {
                   );
                 }),
               ),
-
               const SizedBox(width: 10),
-
               Expanded(
                 child: Obx(() {
                   final subCategories = controller.categoryChilds;
@@ -290,15 +280,52 @@ class _FilterArea extends StatelessWidget {
               ),
             ],
           ),
+          Obx(() {
+            final shouldShowChildCategory =
+                controller.selectedSubCategory.value != null &&
+                    (controller.isSubCategoryChildLoading.value ||
+                        controller.subCategoryChilds.isNotEmpty);
 
+            if (!shouldShowChildCategory) {
+              return const SizedBox.shrink();
+            }
+
+            final childCategories = controller.subCategoryChilds;
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: _DropBox<DatumCatChild>(
+                hint: controller.isSubCategoryChildLoading.value
+                    ? 'Loading...'
+                    : 'Child Category',
+                value: controller.selectedChildCategory.value == null
+                    ? null
+                    : childCategories.firstWhereOrNull(
+                      (item) =>
+                  item.id == controller.selectedChildCategory.value,
+                ),
+                items: childCategories,
+                labelOf: (item) => item.name.trim(),
+                enabled: !controller.isSubCategoryChildLoading.value &&
+                    childCategories.isNotEmpty,
+                onChanged: (item) {
+                  controller.setFilterChildCategory(item?.id);
+                },
+              ),
+            );
+          }),
           const SizedBox(height: 10),
-
           Obx(() {
             final hasCategory = controller.selectedCategory.value != null;
             final hasSubCategory = controller.selectedSubCategory.value != null;
+            final hasChildCategory =
+                controller.selectedChildCategory.value != null;
             final hasSearch = controller.search.value.trim().isNotEmpty;
 
-            if (!hasCategory && !hasSubCategory && !hasSearch) {
+            if (!hasCategory &&
+                !hasSubCategory &&
+                !hasChildCategory &&
+                !hasSearch) {
               return const SizedBox.shrink();
             }
 
@@ -319,6 +346,11 @@ class _FilterArea extends StatelessWidget {
                           label: 'Sub-category selected',
                           onDeleted: controller.clearFilterSubCategory,
                         ),
+                      if (hasChildCategory)
+                        _FilterChipButton(
+                          label: 'Child category selected',
+                          onDeleted: controller.clearFilterChildCategory,
+                        ),
                       if (hasSearch)
                         _FilterChipButton(
                           label: controller.search.value,
@@ -330,15 +362,8 @@ class _FilterArea extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 TextButton(
-                  onPressed: () {
-                    controller.selectedCategory.value = null;
-                    controller.selectedSubCategory.value = null;
-                    controller.categoryChilds.clear();
-                    controller.clearSearch();
-                    controller.getFilterProducts(reset: true);
-                  },
+                  onPressed: controller.clearFilterFilters,
                   child: Text(
                     'Clear All',
                     style: TextStyle(
@@ -442,7 +467,7 @@ class _DropBox<T> extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: enabled ? AppColors.textMuted : AppColors.textMuted,
+              color: AppColors.textMuted,
               fontWeight: FontWeight.w800,
               fontSize: 11,
             ),
@@ -590,7 +615,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Try changing search, category, or sub-category filter.',
+              'Try changing search, category, sub-category, or child category filter.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.w600,

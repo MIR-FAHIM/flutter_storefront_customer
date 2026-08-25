@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -20,6 +21,10 @@ class APIManager {
       final response =
           await http.post(Uri.parse(url), body: param, headers: headerData);
       responseJson = _response(response);
+
+      if(responseJson['message'] == 'Invalid or expired API token'){
+        Get.offNamed(Routes.LOGIN);
+      }
       print("response from api manager $responseJson");
     } on SocketException {
       throw FetchDataException('No Internet connection');

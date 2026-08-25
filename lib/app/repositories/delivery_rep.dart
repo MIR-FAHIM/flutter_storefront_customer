@@ -11,21 +11,9 @@ import 'package:ecom_user_flutter/app/services/auth_service.dart';
 class DeliveryRepository {
   final userdata = GetStorage();
 
-  ///User login api call
-  userLogin(String phoneNumber, String pass, String fcm) async {
-    Map _loginData = {
-      'email': phoneNumber,
-      'password': pass,
-      'fcm_token': fcm,
-    };
 
-    APIManager _manager = APIManager();
-    final response = await _manager.loginAPICall(ApiClient.login, _loginData);
 
-    print('user login: ${response}');
 
-    return response;
-  }
  addAddress(Map data) async {
    Map<String, String> header = {
      'Authorization' : "Bearer ${Get.find<AuthService>().currentUser.value.data!.token}",

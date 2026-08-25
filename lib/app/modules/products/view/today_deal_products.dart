@@ -322,9 +322,7 @@ class _TodayDealFilterArea extends StatelessWidget {
                   );
                 }),
               ),
-
               const SizedBox(width: 10),
-
               Expanded(
                 child: Obx(() {
                   final subCategories = controller.categoryChilds;
@@ -355,23 +353,38 @@ class _TodayDealFilterArea extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 10),
-
           Obx(() {
-            final shops = controller.shops;
+            final shouldShowChildCategory =
+                controller.selectedSubCategory.value != null &&
+                    (controller.isSubCategoryChildLoading.value ||
+                        controller.subCategoryChilds.isNotEmpty);
 
-            return _DropBox<dynamic>(
-              hint: "Seller",
-              value: controller.selectedShop.value == null
-                  ? null
-                  : shops.firstWhereOrNull(
-                    (item) => item.id == controller.selectedShop.value,
+            if (!shouldShowChildCategory) {
+              return const SizedBox.shrink();
+            }
+
+            final childCategories = controller.subCategoryChilds;
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: _DropBox<DatumCatChild>(
+                hint: controller.isSubCategoryChildLoading.value
+                    ? "Loading..."
+                    : "Child Category",
+                value: controller.selectedChildCategory.value == null
+                    ? null
+                    : childCategories.firstWhereOrNull(
+                      (item) =>
+                  item.id == controller.selectedChildCategory.value,
+                ),
+                items: childCategories,
+                labelOf: (item) => item.name.trim(),
+                enabled: !controller.isSubCategoryChildLoading.value &&
+                    childCategories.isNotEmpty,
+                onChanged: (item) {
+                  controller.setTodayDealChildCategory(item?.id);
+                },
               ),
-              items: shops,
-              labelOf: (item) => (item.name ?? "Seller").toString(),
-              onChanged: (item) {
-                controller.setTodayDealShop(item?.id);
-              },
             );
           }),
 
@@ -380,10 +393,14 @@ class _TodayDealFilterArea extends StatelessWidget {
           Obx(() {
             final hasCategory = controller.selectedCategory.value != null;
             final hasSubCategory = controller.selectedSubCategory.value != null;
-            final hasShop = controller.selectedShop.value != null;
+            final hasChildCategory =
+                controller.selectedChildCategory.value != null;
             final hasSearch = controller.search.value.trim().isNotEmpty;
 
-            if (!hasCategory && !hasSubCategory && !hasShop && !hasSearch) {
+            if (!hasCategory &&
+                !hasSubCategory &&
+                !hasChildCategory &&
+                !hasSearch) {
               return const SizedBox.shrink();
             }
 
@@ -404,12 +421,10 @@ class _TodayDealFilterArea extends StatelessWidget {
                           label: "Sub-category selected",
                           onDeleted: controller.clearTodayDealSubCategory,
                         ),
-                      if (hasShop)
+                      if (hasChildCategory)
                         _FilterChipButton(
-                          label: "Seller selected",
-                          onDeleted: () {
-                            controller.setTodayDealShop(null);
-                          },
+                          label: "Child category selected",
+                          onDeleted: controller.clearTodayDealChildCategory,
                         ),
                       if (hasSearch)
                         _FilterChipButton(
@@ -422,13 +437,14 @@ class _TodayDealFilterArea extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 TextButton(
                   onPressed: () {
                     controller.selectedCategory.value = null;
                     controller.selectedSubCategory.value = null;
+                    controller.selectedChildCategory.value = null;
                     controller.selectedShop.value = null;
                     controller.categoryChilds.clear();
+                    controller.subCategoryChilds.clear();
                     controller.clearSearch();
                     controller.getTodayDealProducts(reset: true);
                   },
@@ -716,7 +732,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              "Try changing search, product, or seller filter.",
+              "Try changing search or category filters.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.w600,

@@ -48,7 +48,7 @@ class ProductController extends GetxController {
   final ProductRepository _repo = ProductRepository();
 
   // ---------------------------------------------------------------------------
-  // Common State
+  // Common state
   // ---------------------------------------------------------------------------
 
   final error = ''.obs;
@@ -59,21 +59,34 @@ class ProductController extends GetxController {
 
   Timer? _debounce;
 
+  int _categoryChildRequestToken = 0;
+  int _subCategoryChildRequestToken = 0;
+
+  int _filterProductsRequestToken = 0;
+  int _categoryWiseProductsRequestToken = 0;
+  int _shopProductsRequestToken = 0;
+  int _featuredProductsRequestToken = 0;
+  int _todayDealProductsRequestToken = 0;
+
   // ---------------------------------------------------------------------------
-  // Dropdown Data and Selected Filters
+  // Dropdown data and shared selected filters
   // ---------------------------------------------------------------------------
 
   final categories = <CategoryItem>[].obs;
   final shops = <dynamic>[].obs;
+
   final selectedCategory = RxnInt();
   final selectedSubCategory = RxnInt();
+  final selectedChildCategory = RxnInt();
+  final selectedShop = RxnInt();
 
   final categoryChilds = <DatumCatChild>[].obs;
+  final subCategoryChilds = <DatumCatChild>[].obs;
+
   final isCategoryChildLoading = false.obs;
+  final isSubCategoryChildLoading = false.obs;
 
-  final selectedShop = RxnInt();
   final selectedFilter = Rx<ProductFilterOption?>(null);
-
   final onlyFeatured = true.obs;
   final categoryId = RxnInt();
 
@@ -95,7 +108,7 @@ class ProductController extends GetxController {
   ];
 
   // ---------------------------------------------------------------------------
-  // Product Detail
+  // Product detail
   // ---------------------------------------------------------------------------
 
   final productDetailLoading = false.obs;
@@ -103,12 +116,10 @@ class ProductController extends GetxController {
   final productDetail = Rxn<ProductDetail>();
 
   // ---------------------------------------------------------------------------
-  // ProductFilterPage State
-  // Uses filterProducts
+  // ProductFilterPage state
   // ---------------------------------------------------------------------------
 
   final filterProducts = <ProductModel>[].obs;
-
   final filterCurrentPage = 1.obs;
   final filterLastPage = 1.obs;
   final filterTotal = 0.obs;
@@ -119,14 +130,10 @@ class ProductController extends GetxController {
   final isFilterPageLoaded = false.obs;
 
   // ---------------------------------------------------------------------------
-  // CategoryWisedProducts State
-  // Uses categoryWisedProducts
+  // CategoryWisedProducts state
   // ---------------------------------------------------------------------------
 
   final categoryWisedProducts = <ProductModel>[].obs;
-
-
-
   final categoryCurrentPage = 1.obs;
   final categoryLastPage = 1.obs;
   final categoryTotal = 0.obs;
@@ -137,12 +144,10 @@ class ProductController extends GetxController {
   final isCategoryPageLoaded = false.obs;
 
   // ---------------------------------------------------------------------------
-  // ShopProducts State
-  // Uses shopProducts
+  // ShopProducts state
   // ---------------------------------------------------------------------------
 
   final shopProducts = <ProductModel>[].obs;
-
   final shopCurrentPage = 1.obs;
   final shopLastPage = 1.obs;
   final shopTotal = 0.obs;
@@ -153,12 +158,10 @@ class ProductController extends GetxController {
   final isShopPageLoaded = false.obs;
 
   // ---------------------------------------------------------------------------
-  // Featured Products State
-  // Uses products
+  // Featured products state
   // ---------------------------------------------------------------------------
 
   final products = <ProductModel>[].obs;
-
   final featuredCurrentPage = 1.obs;
   final featuredLastPage = 1.obs;
   final featuredTotal = 0.obs;
@@ -167,9 +170,8 @@ class ProductController extends GetxController {
   final isFeaturedMoreLoading = false.obs;
   final hasMoreFeaturedProducts = true.obs;
 
-// ---------------------------------------------------------------------------
-  // Today Deal Products State
-  // Uses products
+  // ---------------------------------------------------------------------------
+  // Today deal products state
   // ---------------------------------------------------------------------------
 
   final todayDealProducts = <ProductModel>[].obs;
@@ -183,12 +185,10 @@ class ProductController extends GetxController {
   final hasMoreTodayDealProducts = true.obs;
 
   // ---------------------------------------------------------------------------
-  // Home Category Sections
-  // These are mainly first-page category lists for home screen
+  // Home category section state
   // ---------------------------------------------------------------------------
 
   final babyCareProducts = <ProductModel>[].obs;
-
   final groceryProducts = <ProductModel>[].obs;
   final medicineProducts = <ProductModel>[].obs;
   final healthBeautyProducts = <ProductModel>[].obs;
@@ -227,17 +227,23 @@ class ProductController extends GetxController {
   @override
   void onClose() {
     _debounce?.cancel();
-   // searchCtrl.value.dispose();
+    searchCtrl.value.dispose();
     super.onClose();
   }
 
   // ---------------------------------------------------------------------------
-  // Shared Helpers
+  // Shared helpers
   // ---------------------------------------------------------------------------
 
   String? get _searchParam {
     final value = search.value.trim();
     return value.isEmpty ? null : value;
+  }
+
+  int? get _effectiveCategoryId {
+    return selectedChildCategory.value ??
+        selectedSubCategory.value ??
+        selectedCategory.value;
   }
 
   void _debounceAction(VoidCallback action) {
@@ -257,6 +263,32 @@ class ProductController extends GetxController {
     searchCtrl.value.clear();
   }
 
+  void _resetCategoryTree({
+    bool clearCategory = false,
+    bool clearSubCategory = false,
+    bool clearChildCategory = false,
+  }) {
+    if (clearCategory) {
+      selectedCategory.value = null;
+      selectedSubCategory.value = null;
+      selectedChildCategory.value = null;
+      categoryChilds.clear();
+      subCategoryChilds.clear();
+      return;
+    }
+
+    if (clearSubCategory) {
+      selectedSubCategory.value = null;
+      selectedChildCategory.value = null;
+      subCategoryChilds.clear();
+      return;
+    }
+
+    if (clearChildCategory) {
+      selectedChildCategory.value = null;
+    }
+  }
+
   _ProductPageResult _parseProductPageResponse(dynamic res) {
     if (res is Map && res['status'] == 'success') {
       final model = ProductsResponse.fromJson(
@@ -265,18 +297,19 @@ class ProductController extends GetxController {
 
       final pageData = model.data;
       final current = pageData.currentPage;
-      final last = pageData.lastPage ?? current;
+      final int? responseLastPage = pageData.lastPage;
+      final int? responseTotal = pageData.total;
 
       return _ProductPageResult(
         items: pageData.items,
         currentPage: current,
-        lastPage: last,
-        total: pageData.total ?? pageData.items.length,
+        lastPage: responseLastPage ?? current,
+        total: responseTotal ?? pageData.items.length,
       );
     }
 
     final message =
-        res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
+    res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
 
     throw Exception(message);
   }
@@ -300,7 +333,7 @@ class ProductController extends GetxController {
       } else {
         categories.clear();
         error.value =
-            res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
+        res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
       }
     } catch (e) {
       categories.clear();
@@ -308,35 +341,70 @@ class ProductController extends GetxController {
     }
   }
 
-  Future<void> getCategoryChildController(id) async {
-    print("i am called 568");
+  Future<void> getCategoryChilds(int parentCategoryId) async {
+    final requestToken = ++_categoryChildRequestToken;
 
-    error.value = '';
+    isCategoryChildLoading.value = true;
+    categoryChilds.clear();
 
     try {
-      final res = await ProductRepository().getCategoryChild(id);
-      // Debug
-      print('Category API res 56866= $res');
+      final res = await _repo.getCategoryChild(parentCategoryId);
+
+      if (requestToken != _categoryChildRequestToken) return;
 
       if (res is Map && res['status'] == 'success') {
-        final model = CategoryChildModel.fromJson(res as Map<String, dynamic>);
+        final model = CategoryChildModel.fromJson(
+          Map<String, dynamic>.from(res),
+        );
+
         categoryChilds.assignAll(model.data ?? <DatumCatChild>[]);
-        print('Category API res 5566= ${categoryChilds.length}');
       } else {
         categoryChilds.clear();
-        error.value =
-            (res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed');
       }
-    } catch (e) {
-      categoryChilds.clear();
-      error.value = e.toString();
+    } catch (_) {
+      if (requestToken == _categoryChildRequestToken) {
+        categoryChilds.clear();
+      }
     } finally {
-      //isLoading.value = false;
+      if (requestToken == _categoryChildRequestToken) {
+        isCategoryChildLoading.value = false;
+      }
+    }
+  }
+
+  Future<void> getSubCategoryChilds(int subCategoryId) async {
+    final requestToken = ++_subCategoryChildRequestToken;
+
+    isSubCategoryChildLoading.value = true;
+    subCategoryChilds.clear();
+
+    try {
+      final res = await _repo.getCategoryChild(subCategoryId);
+
+      if (requestToken != _subCategoryChildRequestToken) return;
+
+      if (res is Map && res['status'] == 'success') {
+        final model = CategoryChildModel.fromJson(
+          Map<String, dynamic>.from(res),
+        );
+
+        subCategoryChilds.assignAll(model.data ?? <DatumCatChild>[]);
+      } else {
+        subCategoryChilds.clear();
+      }
+    } catch (_) {
+      if (requestToken == _subCategoryChildRequestToken) {
+        subCategoryChilds.clear();
+      }
+    } finally {
+      if (requestToken == _subCategoryChildRequestToken) {
+        isSubCategoryChildLoading.value = false;
+      }
     }
   }
 
   // ---------------------------------------------------------------------------
-  // ProductFilterPage Methods
+  // ProductFilterPage methods
   // ---------------------------------------------------------------------------
 
   void initProductFilterPage({bool forceRefresh = false}) {
@@ -354,33 +422,77 @@ class ProductController extends GetxController {
     });
   }
 
-  Future<void> setFilterCategory(int? id) async {
+  void setFilterCategory(int? id) {
     selectedCategory.value = id;
     selectedSubCategory.value = null;
-    categoryChilds.clear();
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
 
-    if (id != null) {
-      await getCategoryChilds(id);
-    }
+    categoryChilds.clear();
+    subCategoryChilds.clear();
 
     getFilterProducts(reset: true);
+
+    if (id != null) {
+      getCategoryChilds(id);
+    }
   }
 
   void setFilterSubCategory(int? id) {
     selectedSubCategory.value = id;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getFilterProducts(reset: true);
+
+    if (id != null) {
+      getSubCategoryChilds(id);
+    }
+  }
+
+  void setFilterChildCategory(int? id) {
+    selectedChildCategory.value = id;
     getFilterProducts(reset: true);
   }
 
   void clearFilterCategory() {
     selectedCategory.value = null;
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
     categoryChilds.clear();
+    subCategoryChilds.clear();
 
     getFilterProducts(reset: true);
   }
 
   void clearFilterSubCategory() {
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getFilterProducts(reset: true);
+  }
+
+  void clearFilterChildCategory() {
+    selectedChildCategory.value = null;
+    getFilterProducts(reset: true);
+  }
+
+  void clearFilterFilters() {
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+    selectedFilter.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+
+    clearSearch();
     getFilterProducts(reset: true);
   }
 
@@ -394,45 +506,18 @@ class ProductController extends GetxController {
     getFilterProducts(reset: true);
   }
 
-  Future<void> getCategoryChilds(int parentCategoryId) async {
-    if (isCategoryChildLoading.value) return;
-
-    isCategoryChildLoading.value = true;
-    categoryChilds.clear();
-
-    try {
-      final res = await _repo.getCategoryChild(parentCategoryId);
-
-      if (res is Map && res['status'] == 'success') {
-        final model = CategoryChildModel.fromJson(
-          Map<String, dynamic>.from(res),
-        );
-
-        categoryChilds.assignAll(model.data ?? <DatumCatChild>[]);
-      } else {
-        categoryChilds.clear();
-      }
-    } catch (e) {
-      categoryChilds.clear();
-    } finally {
-      isCategoryChildLoading.value = false;
-    }
-  }
-
   Future<void> getFilterProducts({bool reset = false}) async {
+    if (!reset && !hasMoreFilterProducts.value) return;
+    if (!reset && (isFilterLoading.value || isFilterMoreLoading.value)) return;
+
+    final requestToken = ++_filterProductsRequestToken;
+
     if (reset) {
       filterCurrentPage.value = 1;
       filterLastPage.value = 1;
       filterTotal.value = 0;
       hasMoreFilterProducts.value = true;
       filterProducts.clear();
-      _clearError();
-    }
-
-    if (!hasMoreFilterProducts.value && !reset) return;
-    if (isFilterLoading.value || isFilterMoreLoading.value) return;
-
-    if (reset) {
       isFilterLoading.value = true;
     } else {
       isFilterMoreLoading.value = true;
@@ -443,17 +528,16 @@ class ProductController extends GetxController {
     try {
       final pageToLoad = reset ? 1 : filterCurrentPage.value;
 
-      final effectiveCategoryId =
-          selectedSubCategory.value ?? selectedCategory.value;
-
       final res = await _repo.getFilterProducts(
         page: pageToLoad,
         perPage: 20,
-        shopId: selectedShop.value,
-        categoryId: effectiveCategoryId,
+        shopId: null,
+        categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
       );
+
+      if (requestToken != _filterProductsRequestToken) return;
 
       final page = _parseProductPageResponse(res);
 
@@ -474,28 +558,26 @@ class ProductController extends GetxController {
         hasMoreFilterProducts.value = false;
       }
     } catch (e) {
-      if (reset) filterProducts.clear();
-      error.value = e.toString();
+      if (requestToken == _filterProductsRequestToken) {
+        if (reset) filterProducts.clear();
+        error.value = e.toString();
+      }
     } finally {
-      isFilterLoading.value = false;
-      isFilterMoreLoading.value = false;
+      if (reset) {
+        isFilterLoading.value = false;
+      } else {
+        isFilterMoreLoading.value = false;
+      }
     }
   }
 
   Future<void> loadMoreFilterProducts() async {
-    if (isFilterLoading.value || isFilterMoreLoading.value) return;
-    if (!hasMoreFilterProducts.value) return;
-
     await getFilterProducts(reset: false);
   }
 
   // ---------------------------------------------------------------------------
-  // CategoryWisedProducts Methods
+  // CategoryWisedProducts methods
   // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// CategoryWisedProducts Methods
-// ---------------------------------------------------------------------------
 
   void initCategoryWiseProductsPage({bool forceRefresh = false}) {
     if (isCategoryPageLoaded.value && !forceRefresh) return;
@@ -506,14 +588,22 @@ class ProductController extends GetxController {
       getCategoryChilds(selectedCategory.value!);
     }
 
+    if (selectedSubCategory.value != null && subCategoryChilds.isEmpty) {
+      getSubCategoryChilds(selectedSubCategory.value!);
+    }
+
     getCategoryWiseProduct(reset: true);
   }
 
   void openCategoryWiseProducts(int? id) {
     selectedCategory.value = id;
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
     categoryId.value = id;
     categoryChilds.clear();
+    subCategoryChilds.clear();
 
     clearSearch();
 
@@ -527,35 +617,65 @@ class ProductController extends GetxController {
     Get.toNamed(Routes.CATEGORY_WISE_PRODUCT);
   }
 
-  Future<void> setCategoryWiseCategory(int? id) async {
+  void setCategoryWiseCategory(int? id) {
     selectedCategory.value = id;
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
     categoryId.value = id;
     categoryChilds.clear();
-
-    if (id != null) {
-      await getCategoryChilds(id);
-    }
+    subCategoryChilds.clear();
 
     getCategoryWiseProduct(reset: true);
+
+    if (id != null) {
+      getCategoryChilds(id);
+    }
   }
 
   void setCategoryWiseSubCategory(int? id) {
     selectedSubCategory.value = id;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getCategoryWiseProduct(reset: true);
+
+    if (id != null) {
+      getSubCategoryChilds(id);
+    }
+  }
+
+  void setCategoryWiseChildCategory(int? id) {
+    selectedChildCategory.value = id;
     getCategoryWiseProduct(reset: true);
   }
 
   void clearCategoryWiseCategory() {
     selectedCategory.value = null;
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
     categoryId.value = null;
     categoryChilds.clear();
+    subCategoryChilds.clear();
 
     getCategoryWiseProduct(reset: true);
   }
 
   void clearCategoryWiseSubCategory() {
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getCategoryWiseProduct(reset: true);
+  }
+
+  void clearCategoryWiseChildCategory() {
+    selectedChildCategory.value = null;
     getCategoryWiseProduct(reset: true);
   }
 
@@ -573,19 +693,19 @@ class ProductController extends GetxController {
   }
 
   Future<void> getCategoryWiseProduct({bool reset = false}) async {
+    if (!reset && !hasMoreCategoryProducts.value) return;
+    if (!reset && (isCategoryLoading.value || isCategoryMoreLoading.value)) {
+      return;
+    }
+
+    final requestToken = ++_categoryWiseProductsRequestToken;
+
     if (reset) {
       categoryCurrentPage.value = 1;
       categoryLastPage.value = 1;
       categoryTotal.value = 0;
       hasMoreCategoryProducts.value = true;
       categoryWisedProducts.clear();
-      _clearError();
-    }
-
-    if (!hasMoreCategoryProducts.value && !reset) return;
-    if (isCategoryLoading.value || isCategoryMoreLoading.value) return;
-
-    if (reset) {
       isCategoryLoading.value = true;
     } else {
       isCategoryMoreLoading.value = true;
@@ -596,17 +716,16 @@ class ProductController extends GetxController {
     try {
       final pageToLoad = reset ? 1 : categoryCurrentPage.value;
 
-      final effectiveCategoryId =
-          selectedSubCategory.value ?? selectedCategory.value;
-
       final res = await _repo.getFilterProducts(
         page: pageToLoad,
         perPage: 20,
-        shopId: selectedShop.value,
-        categoryId: effectiveCategoryId,
+        shopId: null,
+        categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
       );
+
+      if (requestToken != _categoryWiseProductsRequestToken) return;
 
       final page = _parseProductPageResponse(res);
 
@@ -627,23 +746,25 @@ class ProductController extends GetxController {
         hasMoreCategoryProducts.value = false;
       }
     } catch (e) {
-      if (reset) categoryWisedProducts.clear();
-      error.value = e.toString();
+      if (requestToken == _categoryWiseProductsRequestToken) {
+        if (reset) categoryWisedProducts.clear();
+        error.value = e.toString();
+      }
     } finally {
-      isCategoryLoading.value = false;
-      isCategoryMoreLoading.value = false;
+      if (reset) {
+        isCategoryLoading.value = false;
+      } else {
+        isCategoryMoreLoading.value = false;
+      }
     }
   }
 
   Future<void> loadMoreCategoryWiseProducts() async {
-    if (isCategoryLoading.value || isCategoryMoreLoading.value) return;
-    if (!hasMoreCategoryProducts.value) return;
-
     await getCategoryWiseProduct(reset: false);
   }
 
   // ---------------------------------------------------------------------------
-  // ShopProducts Methods
+  // ShopProducts methods
   // ---------------------------------------------------------------------------
 
   void initShopProductsPage({bool forceRefresh = false}) {
@@ -655,7 +776,12 @@ class ProductController extends GetxController {
 
   void openShopProducts(int? shopId) {
     selectedShop.value = shopId;
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
 
+    categoryChilds.clear();
+    subCategoryChilds.clear();
     clearSearch();
 
     isShopPageLoaded.value = true;
@@ -666,7 +792,17 @@ class ProductController extends GetxController {
 
   void setShopProductCategory(int? id) {
     selectedCategory.value = id;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+
     getShopProducts(reset: true);
+
+    if (id != null) {
+      getCategoryChilds(id);
+    }
   }
 
   void setShopProductShop(int? id) {
@@ -683,19 +819,17 @@ class ProductController extends GetxController {
   }
 
   Future<void> getShopProducts({bool reset = false}) async {
+    if (!reset && !hasMoreShopProducts.value) return;
+    if (!reset && (isShopLoading.value || isShopMoreLoading.value)) return;
+
+    final requestToken = ++_shopProductsRequestToken;
+
     if (reset) {
       shopCurrentPage.value = 1;
       shopLastPage.value = 1;
       shopTotal.value = 0;
       hasMoreShopProducts.value = true;
       shopProducts.clear();
-      _clearError();
-    }
-
-    if (!hasMoreShopProducts.value && !reset) return;
-    if (isShopLoading.value || isShopMoreLoading.value) return;
-
-    if (reset) {
       isShopLoading.value = true;
     } else {
       isShopMoreLoading.value = true;
@@ -710,10 +844,12 @@ class ProductController extends GetxController {
         page: pageToLoad,
         perPage: 20,
         shopId: selectedShop.value,
-        categoryId: selectedCategory.value,
+        categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
       );
+
+      if (requestToken != _shopProductsRequestToken) return;
 
       final page = _parseProductPageResponse(res);
 
@@ -734,39 +870,115 @@ class ProductController extends GetxController {
         hasMoreShopProducts.value = false;
       }
     } catch (e) {
-      if (reset) shopProducts.clear();
-      error.value = e.toString();
+      if (requestToken == _shopProductsRequestToken) {
+        if (reset) shopProducts.clear();
+        error.value = e.toString();
+      }
     } finally {
-      isShopLoading.value = false;
-      isShopMoreLoading.value = false;
+      if (reset) {
+        isShopLoading.value = false;
+      } else {
+        isShopMoreLoading.value = false;
+      }
     }
   }
 
   Future<void> loadMoreShopProducts() async {
-    if (isShopLoading.value || isShopMoreLoading.value) return;
-    if (!hasMoreShopProducts.value) return;
-
     await getShopProducts(reset: false);
   }
 
   // ---------------------------------------------------------------------------
-  // Featured Products Methods
+  // Featured products methods
   // ---------------------------------------------------------------------------
 
+  void setFeaturedCategory(int? id) {
+    selectedCategory.value = id;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+
+    getFeaturedProducts(reset: true);
+
+    if (id != null) {
+      getCategoryChilds(id);
+    }
+  }
+
+  void setFeaturedSubCategory(int? id) {
+    selectedSubCategory.value = id;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getFeaturedProducts(reset: true);
+
+    if (id != null) {
+      getSubCategoryChilds(id);
+    }
+  }
+
+  void setFeaturedChildCategory(int? id) {
+    selectedChildCategory.value = id;
+    getFeaturedProducts(reset: true);
+  }
+
+  void clearFeaturedCategory() {
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+
+    getFeaturedProducts(reset: true);
+  }
+
+  void clearFeaturedSubCategory() {
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getFeaturedProducts(reset: true);
+  }
+
+  void clearFeaturedChildCategory() {
+    selectedChildCategory.value = null;
+    getFeaturedProducts(reset: true);
+  }
+
+  void clearFeaturedFilters() {
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+    selectedFilter.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+
+    clearSearch();
+    getFeaturedProducts(reset: true);
+  }
+
   Future<void> getFeaturedProducts({bool reset = false}) async {
+    if (!reset && !hasMoreFeaturedProducts.value) return;
+    if (!reset && (isFeaturedLoading.value || isFeaturedMoreLoading.value)) {
+      return;
+    }
+
+    final requestToken = ++_featuredProductsRequestToken;
+
     if (reset) {
       featuredCurrentPage.value = 1;
       featuredLastPage.value = 1;
       featuredTotal.value = 0;
       hasMoreFeaturedProducts.value = true;
       products.clear();
-      _clearError();
-    }
-
-    if (!hasMoreFeaturedProducts.value && !reset) return;
-    if (isFeaturedLoading.value || isFeaturedMoreLoading.value) return;
-
-    if (reset) {
       isFeaturedLoading.value = true;
     } else {
       isFeaturedMoreLoading.value = true;
@@ -780,11 +992,13 @@ class ProductController extends GetxController {
       final res = await _repo.getFeaturedProducts(
         page: pageToLoad,
         perPage: 20,
-        shopId: selectedShop.value,
-        categoryId: selectedCategory.value,
+        shopId: null,
+        categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
       );
+
+      if (requestToken != _featuredProductsRequestToken) return;
 
       final page = _parseProductPageResponse(res);
 
@@ -805,18 +1019,20 @@ class ProductController extends GetxController {
         hasMoreFeaturedProducts.value = false;
       }
     } catch (e) {
-      if (reset) products.clear();
-      error.value = e.toString();
+      if (requestToken == _featuredProductsRequestToken) {
+        if (reset) products.clear();
+        error.value = e.toString();
+      }
     } finally {
-      isFeaturedLoading.value = false;
-      isFeaturedMoreLoading.value = false;
+      if (reset) {
+        isFeaturedLoading.value = false;
+      } else {
+        isFeaturedMoreLoading.value = false;
+      }
     }
   }
 
   Future<void> loadMoreFeatured() async {
-    if (isFeaturedLoading.value || isFeaturedMoreLoading.value) return;
-    if (!hasMoreFeaturedProducts.value) return;
-
     await getFeaturedProducts(reset: false);
   }
 
@@ -830,8 +1046,7 @@ class ProductController extends GetxController {
   }
 
   // ---------------------------------------------------------------------------
-  // Home Category Section Methods
-  // These do not use shared pagination. They just load first page for home UI.
+  // Home category section methods
   // ---------------------------------------------------------------------------
 
   Future<void> _loadHomeCategorySection({
@@ -913,13 +1128,9 @@ class ProductController extends GetxController {
     );
   }
 
-// ---------------------------------------------------------------------------
-// Today Deal Products Methods
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Today Deal Products Methods
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Today deal products methods
+  // ---------------------------------------------------------------------------
 
   void initTodayDealProductsPage({bool forceRefresh = false}) {
     if (isTodayDealPageLoaded.value && !forceRefresh) return;
@@ -930,17 +1141,23 @@ class ProductController extends GetxController {
       getCategoryChilds(selectedCategory.value!);
     }
 
+    if (selectedSubCategory.value != null && subCategoryChilds.isEmpty) {
+      getSubCategoryChilds(selectedSubCategory.value!);
+    }
+
     getTodayDealProducts(reset: true);
   }
 
   void openTodayDealProducts() {
-    clearSearch();
-
     selectedCategory.value = null;
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
     selectedShop.value = null;
     selectedFilter.value = null;
+
     categoryChilds.clear();
+    subCategoryChilds.clear();
+    clearSearch();
 
     isTodayDealPageLoaded.value = true;
     getTodayDealProducts(reset: true);
@@ -948,33 +1165,77 @@ class ProductController extends GetxController {
     Get.toNamed(Routes.TODAY_DEAL_PRODUCT);
   }
 
-  Future<void> setTodayDealCategory(int? id) async {
+  void setTodayDealCategory(int? id) {
     selectedCategory.value = id;
     selectedSubCategory.value = null;
-    categoryChilds.clear();
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
 
-    if (id != null) {
-      await getCategoryChilds(id);
-    }
+    categoryChilds.clear();
+    subCategoryChilds.clear();
 
     getTodayDealProducts(reset: true);
+
+    if (id != null) {
+      getCategoryChilds(id);
+    }
   }
 
   void setTodayDealSubCategory(int? id) {
     selectedSubCategory.value = id;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getTodayDealProducts(reset: true);
+
+    if (id != null) {
+      getSubCategoryChilds(id);
+    }
+  }
+
+  void setTodayDealChildCategory(int? id) {
+    selectedChildCategory.value = id;
     getTodayDealProducts(reset: true);
   }
 
   void clearTodayDealCategory() {
     selectedCategory.value = null;
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+
     categoryChilds.clear();
+    subCategoryChilds.clear();
 
     getTodayDealProducts(reset: true);
   }
 
   void clearTodayDealSubCategory() {
     selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+
+    subCategoryChilds.clear();
+
+    getTodayDealProducts(reset: true);
+  }
+
+  void clearTodayDealChildCategory() {
+    selectedChildCategory.value = null;
+    getTodayDealProducts(reset: true);
+  }
+
+  void clearTodayDealFilters() {
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+    selectedFilter.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+
+    clearSearch();
     getTodayDealProducts(reset: true);
   }
 
@@ -992,19 +1253,19 @@ class ProductController extends GetxController {
   }
 
   Future<void> getTodayDealProducts({bool reset = false}) async {
+    if (!reset && !hasMoreTodayDealProducts.value) return;
+    if (!reset && (isTodayDealLoading.value || isTodayDealMoreLoading.value)) {
+      return;
+    }
+
+    final requestToken = ++_todayDealProductsRequestToken;
+
     if (reset) {
       todayDealCurrentPage.value = 1;
       todayDealLastPage.value = 1;
       todayDealTotal.value = 0;
       hasMoreTodayDealProducts.value = true;
       todayDealProducts.clear();
-      _clearError();
-    }
-
-    if (!hasMoreTodayDealProducts.value && !reset) return;
-    if (isTodayDealLoading.value || isTodayDealMoreLoading.value) return;
-
-    if (reset) {
       isTodayDealLoading.value = true;
     } else {
       isTodayDealMoreLoading.value = true;
@@ -1015,17 +1276,16 @@ class ProductController extends GetxController {
     try {
       final pageToLoad = reset ? 1 : todayDealCurrentPage.value;
 
-      final effectiveCategoryId =
-          selectedSubCategory.value ?? selectedCategory.value;
-
       final res = await _repo.getTodayDealProducts(
         page: pageToLoad,
         perPage: 20,
-        shopId: selectedShop.value,
-        categoryId: effectiveCategoryId,
+        shopId: null,
+        categoryId: _effectiveCategoryId,
         isActive: null,
         search: _searchParam,
       );
+
+      if (requestToken != _todayDealProductsRequestToken) return;
 
       final page = _parseProductPageResponse(res);
 
@@ -1046,22 +1306,25 @@ class ProductController extends GetxController {
         hasMoreTodayDealProducts.value = false;
       }
     } catch (e) {
-      if (reset) todayDealProducts.clear();
-      error.value = e.toString();
+      if (requestToken == _todayDealProductsRequestToken) {
+        if (reset) todayDealProducts.clear();
+        error.value = e.toString();
+      }
     } finally {
-      isTodayDealLoading.value = false;
-      isTodayDealMoreLoading.value = false;
+      if (reset) {
+        isTodayDealLoading.value = false;
+      } else {
+        isTodayDealMoreLoading.value = false;
+      }
     }
   }
 
   Future<void> loadMoreTodayDealProducts() async {
-    if (isTodayDealLoading.value || isTodayDealMoreLoading.value) return;
-    if (!hasMoreTodayDealProducts.value) return;
-
     await getTodayDealProducts(reset: false);
   }
+
   // ---------------------------------------------------------------------------
-  // Product Detail
+  // Product detail
   // ---------------------------------------------------------------------------
 
   Future<void> getProductDetail(int productId) async {
@@ -1070,6 +1333,7 @@ class ProductController extends GetxController {
     productDetailLoading.value = true;
     productDetailError.value = '';
     productDetail.value = null;
+    resetQty();
 
     try {
       final res = await _repo.getProductDetail(productId);
@@ -1084,7 +1348,7 @@ class ProductController extends GetxController {
         Get.toNamed(Routes.PRODUCT_DETAIL);
       } else {
         productDetailError.value =
-            res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
+        res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
       }
     } catch (e) {
       productDetailError.value = e.toString();
@@ -1104,11 +1368,16 @@ class ProductController extends GetxController {
     if (isCartLoading.value) return;
 
     isCartLoading.value = true;
-   if(Get.find<AuthService>().currentUser.value.data == null){
-     Get.toNamed(Routes.LOGIN);
-   }
-    final userId =
-        Get.find<AuthService>().currentUser.value.data?.user?.id.toString();
+
+    final currentUser = Get.find<AuthService>().currentUser.value.data;
+
+    if (currentUser == null) {
+      isCartLoading.value = false;
+      Get.toNamed(Routes.LOGIN);
+      return;
+    }
+
+    final userId = currentUser.user?.id.toString();
 
     if (userId == null) {
       isCartLoading.value = false;
@@ -1163,7 +1432,7 @@ class ProductController extends GetxController {
   }
 
   // ---------------------------------------------------------------------------
-  // Quantity Helpers
+  // Quantity helpers
   // ---------------------------------------------------------------------------
 
   void resetQty() {

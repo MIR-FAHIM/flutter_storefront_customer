@@ -62,7 +62,7 @@ class CartController extends GetxController {
     districtController.value.dispose();
     areaController.value.dispose();
     addressController.value.dispose();
-    noteCtrl.value.dispose();
+ // noteCtrl.value.dispose();
     super.onClose();
   }
 
@@ -407,7 +407,7 @@ class CartController extends GetxController {
     required String amount,
     required String paymentMethod,
     String note = '',
-    String platform = 'web',
+    String platform = 'app',
   }) {
     return <String, String>{
       'user_id': userId,
