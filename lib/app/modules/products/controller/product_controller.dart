@@ -8,6 +8,7 @@ import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.da
 import 'package:ecom_user_flutter/app/repositories/product_rep.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:ecom_user_flutter/common/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -46,6 +47,7 @@ class ProductController extends GetxController {
   // ---------------------------------------------------------------------------
 
   final ProductRepository _repo = ProductRepository();
+  StoreContextService get _storeContext => Get.find<StoreContextService>();
 
   // ---------------------------------------------------------------------------
   // Common state
@@ -66,6 +68,7 @@ class ProductController extends GetxController {
   int _categoryWiseProductsRequestToken = 0;
   int _shopProductsRequestToken = 0;
   int _featuredProductsRequestToken = 0;
+  int _homeAllProductsRequestToken = 0;
   int _todayDealProductsRequestToken = 0;
 
   // ---------------------------------------------------------------------------
@@ -162,6 +165,7 @@ class ProductController extends GetxController {
   // ---------------------------------------------------------------------------
 
   final products = <ProductModel>[].obs;
+  final homeAllProducts = <ProductModel>[].obs;
   final featuredCurrentPage = 1.obs;
   final featuredLastPage = 1.obs;
   final featuredTotal = 0.obs;
@@ -169,6 +173,7 @@ class ProductController extends GetxController {
   final isFeaturedLoading = false.obs;
   final isFeaturedMoreLoading = false.obs;
   final hasMoreFeaturedProducts = true.obs;
+  final isHomeAllProductsLoading = false.obs;
 
   // ---------------------------------------------------------------------------
   // Today deal products state
@@ -202,6 +207,7 @@ class ProductController extends GetxController {
   // ---------------------------------------------------------------------------
 
   final isCartLoading = false.obs;
+  Worker? _storeSlugWorker;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -211,8 +217,15 @@ class ProductController extends GetxController {
   void onInit() {
     super.onInit();
 
+    _syncStoreRouteArguments();
+    _storeSlugWorker = ever<String>(
+      _storeContext.activeStoreSlug,
+      (_) => reloadStorefrontData(),
+    );
+    if (!_storeContext.hasActiveStore) return;
     getCategories();
 
+    getHomeAllProducts(reset: true);
     getFeaturedProducts(reset: true);
     getTodayDealProducts(reset: true);
 
@@ -226,6 +239,7 @@ class ProductController extends GetxController {
 
   @override
   void onClose() {
+    _storeSlugWorker?.dispose();
     _debounce?.cancel();
     searchCtrl.value.dispose();
     super.onClose();
@@ -256,6 +270,97 @@ class ProductController extends GetxController {
 
   void _clearError() {
     error.value = '';
+  }
+
+  Future<void> reloadStorefrontData() async {
+    _resetStorefrontState();
+    if (!_storeContext.hasActiveStore) return;
+    await Future.wait([
+      getCategories(),
+      getHomeAllProducts(reset: true),
+      getFeaturedProducts(reset: true),
+      getTodayDealProducts(reset: true),
+      babyCareProductsController(reset: true),
+      groceryProductsController(reset: true),
+      healthBeautyCareProductsController(reset: true),
+      fashionProductsController(reset: true),
+      medicineProductsController(reset: true),
+      restaurantProductsController(reset: true),
+    ]);
+  }
+
+  void _resetStorefrontState() {
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    selectedChildCategory.value = null;
+    selectedShop.value = null;
+    selectedFilter.value = null;
+    categoryId.value = null;
+
+    categoryChilds.clear();
+    subCategoryChilds.clear();
+    clearSearch();
+
+    filterProducts.clear();
+    categoryWisedProducts.clear();
+    shopProducts.clear();
+    products.clear();
+    homeAllProducts.clear();
+    todayDealProducts.clear();
+    babyCareProducts.clear();
+    groceryProducts.clear();
+    medicineProducts.clear();
+    healthBeautyProducts.clear();
+    fashionProducts.clear();
+    restaurantProducts.clear();
+
+    isFilterPageLoaded.value = false;
+    isCategoryPageLoaded.value = false;
+    isShopPageLoaded.value = false;
+    isTodayDealPageLoaded.value = false;
+  }
+
+  bool get _isFeaturedProductsRoute {
+    return Get.currentRoute.contains('/featured-products');
+  }
+
+  String? get activeStoreSlug => _storeContext.storeSlugOrNull;
+
+  String _storePath(String suffix) {
+    final slug = activeStoreSlug;
+    if (slug == null || slug.isEmpty) return suffix;
+    return '/store/$slug$suffix';
+  }
+
+  void _syncStoreRouteArguments() {
+    final routeSlug = Get.parameters['store_slug'] ?? Get.parameters['slug'];
+    if (routeSlug != null && routeSlug.trim().isNotEmpty) {
+      _storeContext.setActiveStoreFromRoute(routeSlug);
+    }
+
+    final categoryParam = Get.parameters['category_id'] ??
+        _readArgumentValue('category_id') ??
+        _readArgumentValue('categoryId');
+    final category = int.tryParse(categoryParam?.toString() ?? '');
+    if (category != null) {
+      selectedCategory.value = category;
+      categoryId.value = category;
+    }
+
+    final productParam = Get.parameters['product_slug'] ??
+        Get.parameters['product_id'] ??
+        _readArgumentValue('product_slug') ??
+        _readArgumentValue('product_id') ??
+        _readArgumentValue('productId');
+    if (productParam != null && productParam.toString().trim().isNotEmpty) {
+      Future.microtask(() => getProductDetail(productParam, navigate: false));
+    }
+  }
+
+  dynamic _readArgumentValue(String key) {
+    final args = Get.arguments;
+    if (args is Map) return args[key];
+    return null;
   }
 
   void clearSearch() {
@@ -322,7 +427,7 @@ class ProductController extends GetxController {
     _clearError();
 
     try {
-      final res = await _repo.getCategory();
+      final res = await _repo.getCategory(storeSlug: activeStoreSlug);
 
       if (res is Map && res['status'] == 'success') {
         final model = CategoryResModel.fromJson(
@@ -348,7 +453,10 @@ class ProductController extends GetxController {
     categoryChilds.clear();
 
     try {
-      final res = await _repo.getCategoryChild(parentCategoryId);
+      final res = await _repo.getCategoryChild(
+        parentCategoryId,
+        storeSlug: activeStoreSlug,
+      );
 
       if (requestToken != _categoryChildRequestToken) return;
 
@@ -379,7 +487,10 @@ class ProductController extends GetxController {
     subCategoryChilds.clear();
 
     try {
-      final res = await _repo.getCategoryChild(subCategoryId);
+      final res = await _repo.getCategoryChild(
+        subCategoryId,
+        storeSlug: activeStoreSlug,
+      );
 
       if (requestToken != _subCategoryChildRequestToken) return;
 
@@ -528,14 +639,25 @@ class ProductController extends GetxController {
     try {
       final pageToLoad = reset ? 1 : filterCurrentPage.value;
 
-      final res = await _repo.getFilterProducts(
-        page: pageToLoad,
-        perPage: 20,
-        shopId: null,
-        categoryId: _effectiveCategoryId,
-        isActive: selectedFilter.value?.isActive,
-        search: _searchParam,
-      );
+      final res = _isFeaturedProductsRoute
+          ? await _repo.getFeaturedProducts(
+              page: pageToLoad,
+              perPage: 20,
+              shopId: null,
+              categoryId: _effectiveCategoryId,
+              isActive: selectedFilter.value?.isActive,
+              search: _searchParam,
+              storeSlug: activeStoreSlug,
+            )
+          : await _repo.getFilterProducts(
+              page: pageToLoad,
+              perPage: 20,
+              shopId: null,
+              categoryId: _effectiveCategoryId,
+              isActive: selectedFilter.value?.isActive,
+              search: _searchParam,
+              storeSlug: activeStoreSlug,
+            );
 
       if (requestToken != _filterProductsRequestToken) return;
 
@@ -614,7 +736,16 @@ class ProductController extends GetxController {
     isCategoryPageLoaded.value = true;
     getCategoryWiseProduct(reset: true);
 
-    Get.toNamed(Routes.CATEGORY_WISE_PRODUCT);
+    final slug = activeStoreSlug;
+    Get.toNamed(
+      slug == null
+          ? Routes.CATEGORY_WISE_PRODUCT
+          : '/store/$slug/category/${id ?? ''}',
+      arguments: {
+        'store_slug': slug,
+        'category_id': id,
+      },
+    );
   }
 
   void setCategoryWiseCategory(int? id) {
@@ -723,6 +854,7 @@ class ProductController extends GetxController {
         categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
+        storeSlug: activeStoreSlug,
       );
 
       if (requestToken != _categoryWiseProductsRequestToken) return;
@@ -787,7 +919,14 @@ class ProductController extends GetxController {
     isShopPageLoaded.value = true;
     getShopProducts(reset: true);
 
-    Get.toNamed(Routes.SHOP_PRODUCT);
+    final slug = activeStoreSlug;
+    Get.toNamed(
+      slug == null ? Routes.SHOP_PRODUCT : '/store/$slug/products',
+      arguments: {
+        'store_slug': slug,
+        'shop_id': shopId,
+      },
+    );
   }
 
   void setShopProductCategory(int? id) {
@@ -847,6 +986,7 @@ class ProductController extends GetxController {
         categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
+        storeSlug: activeStoreSlug,
       );
 
       if (requestToken != _shopProductsRequestToken) return;
@@ -890,6 +1030,42 @@ class ProductController extends GetxController {
   // ---------------------------------------------------------------------------
   // Featured products methods
   // ---------------------------------------------------------------------------
+
+  Future<void> getHomeAllProducts({bool reset = false}) async {
+    final requestToken = ++_homeAllProductsRequestToken;
+
+    if (reset) {
+      homeAllProducts.clear();
+    }
+
+    isHomeAllProductsLoading.value = true;
+
+    try {
+      final res = await _repo.getFilterProducts(
+        page: 1,
+        perPage: 20,
+        shopId: null,
+        categoryId: null,
+        isActive: selectedFilter.value?.isActive,
+        search: null,
+        storeSlug: activeStoreSlug,
+      );
+
+      if (requestToken != _homeAllProductsRequestToken) return;
+
+      final page = _parseProductPageResponse(res);
+      homeAllProducts.assignAll(page.items);
+    } catch (e) {
+      if (requestToken == _homeAllProductsRequestToken) {
+        if (reset) homeAllProducts.clear();
+        error.value = e.toString();
+      }
+    } finally {
+      if (requestToken == _homeAllProductsRequestToken) {
+        isHomeAllProductsLoading.value = false;
+      }
+    }
+  }
 
   void setFeaturedCategory(int? id) {
     selectedCategory.value = id;
@@ -996,6 +1172,7 @@ class ProductController extends GetxController {
         categoryId: _effectiveCategoryId,
         isActive: selectedFilter.value?.isActive,
         search: _searchParam,
+        storeSlug: activeStoreSlug,
       );
 
       if (requestToken != _featuredProductsRequestToken) return;
@@ -1068,6 +1245,7 @@ class ProductController extends GetxController {
         shopId: null,
         isActive: selectedFilter.value?.isActive,
         search: null,
+        storeSlug: activeStoreSlug,
       );
 
       final page = _parseProductPageResponse(res);
@@ -1162,7 +1340,9 @@ class ProductController extends GetxController {
     isTodayDealPageLoaded.value = true;
     getTodayDealProducts(reset: true);
 
-    Get.toNamed(Routes.TODAY_DEAL_PRODUCT);
+    Get.toNamed(
+      activeStoreSlug == null ? Routes.TODAY_DEAL_PRODUCT : _storePath('/today-deals'),
+    );
   }
 
   void setTodayDealCategory(int? id) {
@@ -1283,6 +1463,7 @@ class ProductController extends GetxController {
         categoryId: _effectiveCategoryId,
         isActive: null,
         search: _searchParam,
+        storeSlug: activeStoreSlug,
       );
 
       if (requestToken != _todayDealProductsRequestToken) return;
@@ -1327,7 +1508,22 @@ class ProductController extends GetxController {
   // Product detail
   // ---------------------------------------------------------------------------
 
-  Future<void> getProductDetail(int productId) async {
+  Future<void> openProductDetail(ProductModel product) async {
+    final identifier = (product.slug?.trim().isNotEmpty ?? false)
+        ? product.slug!
+        : product.id.toString();
+
+    await getProductDetail(
+      identifier,
+      fallbackProduct: product,
+    );
+  }
+
+  Future<void> getProductDetail(
+    dynamic productIdentifier, {
+    ProductModel? fallbackProduct,
+    bool navigate = true,
+  }) async {
     if (productDetailLoading.value) return;
 
     productDetailLoading.value = true;
@@ -1336,7 +1532,10 @@ class ProductController extends GetxController {
     resetQty();
 
     try {
-      final res = await _repo.getProductDetail(productId);
+      final res = await _repo.getProductDetail(
+        productIdentifier,
+        storeSlug: activeStoreSlug,
+      );
 
       if (res is Map && res['status'] == 'success') {
         final model = ProductDetailResModel.fromJson(
@@ -1345,7 +1544,20 @@ class ProductController extends GetxController {
 
         productDetail.value = model.data;
 
-        Get.toNamed(Routes.PRODUCT_DETAIL);
+        if (navigate) {
+          final slug = activeStoreSlug;
+          final productRouteValue = productIdentifier.toString();
+          Get.toNamed(
+            slug == null
+                ? Routes.PRODUCT_DETAIL
+                : '/store/$slug/products/$productRouteValue',
+            arguments: {
+              'store_slug': slug,
+              'product_slug': productRouteValue,
+              'product_id': fallbackProduct?.id,
+            },
+          );
+        }
       } else {
         productDetailError.value =
         res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed';
@@ -1364,6 +1576,7 @@ class ProductController extends GetxController {
   Future<void> addToCart({
     required dynamic productId,
     required dynamic qty,
+    dynamic product,
   }) async {
     if (isCartLoading.value) return;
 
@@ -1373,6 +1586,12 @@ class ProductController extends GetxController {
 
     if (currentUser == null) {
       isCartLoading.value = false;
+      await _storeContext.saveLoginRedirect(
+        route: Get.currentRoute,
+        arguments: Get.arguments is Map
+            ? Map<String, dynamic>.from(Get.arguments)
+            : <String, dynamic>{},
+      );
       Get.toNamed(Routes.LOGIN);
       return;
     }
@@ -1391,10 +1610,30 @@ class ProductController extends GetxController {
       return;
     }
 
+    final resolvedProductId = _resolveProductId(product) ?? productId;
+    final storeProductId = _resolveStoreProductId(product);
+    final storeId = _resolveStoreId(product) ?? _storeContext.activeStoreId.value;
+    final slug = activeStoreSlug;
+
+    if (slug == null || slug.isEmpty) {
+      isCartLoading.value = false;
+
+      Get.showSnackbar(
+        Ui.ErrorSnackBar(
+          message: 'Please select a store before adding products to cart.',
+          title: 'Store Required'.tr,
+        ),
+      );
+      return;
+    }
+
     final data = {
       'user_id': userId,
-      'product_id': productId.toString(),
+      'product_id': resolvedProductId.toString(),
       'qty': qty.toString(),
+      'store_slug': slug,
+      if (storeProductId != null) 'store_product_id': storeProductId.toString(),
+      if (storeId != null) 'store_id': storeId.toString(),
     };
 
     try {
@@ -1429,6 +1668,92 @@ class ProductController extends GetxController {
     } finally {
       isCartLoading.value = false;
     }
+  }
+
+  dynamic _resolveProductId(dynamic product) {
+    return _firstCartValue(product, const [
+      'product_id',
+      'product.id',
+      'id',
+    ]);
+  }
+
+  dynamic _resolveStoreProductId(dynamic product) {
+    final direct = _firstCartValue(product, const [
+      'store_product_id',
+      'store_product.id',
+    ]);
+    if (direct != null) return direct;
+
+    final productId = _firstCartValue(product, const ['product_id']);
+    if (productId != null) return _firstCartValue(product, const ['id']);
+
+    return null;
+  }
+
+  dynamic _resolveStoreId(dynamic product) {
+    return _firstCartValue(product, const [
+      'store_id',
+      'store.id',
+      'shop.store_id',
+    ]);
+  }
+
+  dynamic _firstCartValue(dynamic source, List<String> paths) {
+    for (final path in paths) {
+      final value = _readPathValue(source, path);
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty && text.toLowerCase() != 'null') return value;
+    }
+
+    return null;
+  }
+
+  dynamic _readPathValue(dynamic source, String path) {
+    dynamic current = source;
+    for (final segment in path.split('.')) {
+      if (current == null) return null;
+      if (current is Map) {
+        current = current[segment];
+        continue;
+      }
+
+      try {
+        switch (segment) {
+          case 'id':
+            current = current.id;
+            break;
+          case 'product_id':
+            current = current.productId;
+            break;
+          case 'store_product_id':
+            current = current.storeProductId;
+            break;
+          case 'store_id':
+            current = current.storeId;
+            break;
+          case 'product':
+            current = current.product;
+            break;
+          case 'store_product':
+            current = current.storeProduct;
+            break;
+          case 'store':
+            current = current.store;
+            break;
+          case 'shop':
+            current = current.shop;
+            break;
+          default:
+            return null;
+        }
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return current;
   }
 
   // ---------------------------------------------------------------------------

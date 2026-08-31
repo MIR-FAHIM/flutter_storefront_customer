@@ -1,6 +1,7 @@
 // lib/app/modules/home/views/home_view.dart
 
 import 'dart:io';
+import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
 import 'package:ecom_user_flutter/app/modules/banner/view/home_banner_view.dart';
 import 'package:ecom_user_flutter/app/modules/category/controller/category_controller.dart';
 import 'package:ecom_user_flutter/app/modules/category/view/home_category_child_row.dart';
@@ -19,6 +20,7 @@ import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_restaur
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/medicine_home.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:ecom_user_flutter/common/Color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -94,15 +96,37 @@ class HomeView extends GetView<HomeController> {
               SliverToBoxAdapter(
                 child: _PdfStyleHomeHeader(
                   onSearchTap: () {
-                    Get.toNamed(Routes.PRODUCT_FILTER);
+                    final slug = Get.find<StoreContextService>().storeSlugOrNull;
+                    Get.toNamed(
+                      slug == null ? Routes.PRODUCT_FILTER : '/store/$slug/search',
+                    );
                   },
                   onMessengerTap: () {},
+                  onScanTap: () {
+                    Get.toNamed(Routes.QR_SCAN);
+                  },
                   onNotificationTap: () {
                     // Get.toNamed(Routes.NOTIFICATIONVIEW);
                   },
                   onWishlistTap: () {},
                 ),
               ),
+
+              Obx(() {
+                if (Get.find<StoreContextService>().hasActiveStore) {
+                  return const SliverToBoxAdapter(
+                    child: SizedBox.shrink(),
+                  );
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
+                    child: _ChooseStorePrompt(
+                      onPressed: () => Get.toNamed(Routes.SHOP_LIST),
+                    ),
+                  ),
+                );
+              }),
 
               const SliverToBoxAdapter(
                 child: SizedBox(height: 12),
@@ -255,15 +279,19 @@ class _PdfStyleHomeHeader extends StatelessWidget {
     required this.onMessengerTap,
     required this.onNotificationTap,
     required this.onWishlistTap,
+    required this.onScanTap,
   });
 
   final VoidCallback onSearchTap;
   final VoidCallback onMessengerTap;
   final VoidCallback onNotificationTap;
   final VoidCallback onWishlistTap;
+  final VoidCallback onScanTap;
 
   @override
   Widget build(BuildContext context) {
+    final storeContext = Get.find<StoreContextService>();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
       decoration: BoxDecoration(
@@ -283,32 +311,56 @@ class _PdfStyleHomeHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 23,
-                backgroundColor: Colors.white.withOpacity(0.18),
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  color: AppColors.textWhite,
-                  size: 28,
-                ),
-              ),
+              Obx(() {
+                final logo = storeContext.activeStoreLogo.value;
+                return CircleAvatar(
+                  radius: 23,
+                  backgroundColor: Colors.white.withOpacity(0.18),
+                  backgroundImage:
+                      logo.isEmpty ? null : NetworkImage(_asHeaderImageUrl(logo)),
+                  child: logo.isEmpty
+                      ? Icon(
+                          storeContext.hasActiveStore
+                              ? Icons.storefront_rounded
+                              : Icons.person_outline_rounded,
+                          color: AppColors.textWhite,
+                          size: 28,
+                        )
+                      : null,
+                );
+              }),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Welcome Back",
-                      style: TextStyle(
-                        color: AppColors.textWhite,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    Obx(() {
+                      return Text(
+                        storeContext.hasActiveStore
+                            ? "Shopping From"
+                            : "Welcome Back",
+                        style: TextStyle(
+                          color: AppColors.textWhite,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 2),
-                    if (Get.find<AuthService>().currentUser.value.data == null)
-                      Text(
-                        "Customer",
+                    Obx(() {
+                      final storeName = storeContext.activeStoreName.value;
+                      final user = Get.find<AuthService>()
+                          .currentUser
+                          .value
+                          .data
+                          ?.user
+                          ?.name;
+                      return Text(
+                        storeContext.hasActiveStore
+                            ? (storeName.isEmpty
+                                ? storeContext.activeStoreSlug.value
+                                : storeName)
+                            : (user ?? "Customer"),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -316,23 +368,8 @@ class _PdfStyleHomeHeader extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
-                      ),
-                    if (Get.find<AuthService>().currentUser.value.data != null)
-                      Text(
-                        Get.find<AuthService>()
-                            .currentUser
-                            .value
-                            .data!
-                            .user!
-                            .name!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textWhite,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -340,6 +377,12 @@ class _PdfStyleHomeHeader extends StatelessWidget {
                 icon: Icons.messenger_outline_rounded,
                 label: "messenger",
                 onTap: onMessengerTap,
+              ),
+              const SizedBox(width: 8),
+              _HeaderCircleIcon(
+                icon: Icons.qr_code_2_rounded,
+                label: "scan",
+                onTap: onScanTap,
               ),
               const SizedBox(width: 8),
               _HeaderCircleIcon(
@@ -366,6 +409,12 @@ class _PdfStyleHomeHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+String _asHeaderImageUrl(String value) {
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  final cleanValue = value.startsWith('/') ? value.substring(1) : value;
+  return '${CompanyData.image_file_url}/$cleanValue';
 }
 
 class _HeaderCircleIcon extends StatelessWidget {
@@ -439,6 +488,40 @@ class _HeaderCircleIcon extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChooseStorePrompt extends StatelessWidget {
+  const _ChooseStorePrompt({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryColor.withOpacity(0.18)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.storefront_outlined, color: AppColors.primaryColor),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Choose your preferred store',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: onPressed,
+            child: const Text('Choose'),
+          ),
         ],
       ),
     );

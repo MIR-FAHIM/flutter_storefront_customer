@@ -25,6 +25,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:ecom_user_flutter/app/models/ecom/order/cart_model.dart';
 import 'package:ecom_user_flutter/app/repositories/order_rep.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:velocity_x/velocity_x.dart';
 
 class CartController extends GetxController {
@@ -45,6 +46,7 @@ class CartController extends GetxController {
   final cart = Rxn<CartModel>();
 
   final OrderRepository _repo = OrderRepository();
+  StoreContextService get _storeContext => Get.find<StoreContextService>();
 
   @override
   void onInit() {
@@ -422,6 +424,8 @@ class CartController extends GetxController {
       'total_amount': amount,
       'payment_method': paymentMethod,
       'platform': platform,
+      if (_storeContext.storeSlugOrNull != null)
+        'store_slug': _storeContext.storeSlugOrNull!,
     };
   }
 
@@ -439,7 +443,8 @@ class CartController extends GetxController {
   /// );
   ///
   goToCheckout() {
-    Get.toNamed(Routes.PROCEED_ORDER);
+    final slug = _storeContext.storeSlugOrNull;
+    Get.toNamed(slug == null ? Routes.PROCEED_ORDER : '/store/$slug/checkout');
   }
 
   Future<void> proceedToShipping({

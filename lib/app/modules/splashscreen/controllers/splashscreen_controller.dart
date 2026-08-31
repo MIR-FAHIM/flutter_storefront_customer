@@ -7,6 +7,7 @@ import 'package:ecom_user_flutter/app/models/ecom/notification/popup_image_notif
 
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:ecom_user_flutter/main.dart';
 import 'package:ecom_user_flutter/service/shared_pref.dart';
 
@@ -22,7 +23,8 @@ class SplashscreenController extends GetxController {
 
 
     Timer(const Duration(seconds: 3), () {
-      Get.offAllNamed(Routes.ROOT,);
+      final slug = Get.find<StoreContextService>().storeSlugOrNull;
+      Get.offAllNamed(slug == null ? Routes.ROOT : '/store/$slug');
      //  if(Get.find<AuthService>().currentUser.value.data != null){
      //    Get.offAllNamed(Routes.ROOT,);
      //  }else{

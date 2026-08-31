@@ -33,6 +33,20 @@ abstract class Routes {
   static const SHOP_PRODUCT = _Paths.SHOP_PRODUCT;
   static const TODAY_DEAL_PRODUCT = _Paths.TODAY_DEAL_PRODUCT;
   static const ADD_ADDRESS = _Paths.ADD_ADDRESS;
+  static const STORE_HOME = _Paths.STORE_HOME;
+  static const STORE_PRODUCTS = _Paths.STORE_PRODUCTS;
+  static const STORE_PRODUCT_DETAIL = _Paths.STORE_PRODUCT_DETAIL;
+  static const STORE_CATEGORY_PRODUCTS = _Paths.STORE_CATEGORY_PRODUCTS;
+  static const STORE_CART = _Paths.STORE_CART;
+  static const STORE_CHECKOUT = _Paths.STORE_CHECKOUT;
+  static const STORE_ORDERS = _Paths.STORE_ORDERS;
+  static const STORE_ORDER_DETAIL = _Paths.STORE_ORDER_DETAIL;
+  static const STORE_SEARCH = _Paths.STORE_SEARCH;
+  static const STORE_TODAY_DEALS = _Paths.STORE_TODAY_DEALS;
+  static const STORE_FEATURED_PRODUCTS = _Paths.STORE_FEATURED_PRODUCTS;
+  static const PREFERRED_STORES = _Paths.PREFERRED_STORES;
+  static const STORE_PROFILE = _Paths.STORE_PROFILE;
+  static const QR_SCAN = _Paths.QR_SCAN;
 }
 
 abstract class _Paths {
@@ -68,4 +82,20 @@ abstract class _Paths {
   static const SHOP_PRODUCT = '/SHOP_PRODUCT';
   static const TODAY_DEAL_PRODUCT = '/TODAY_DEAL_PRODUCT';
   static const ADD_ADDRESS = '/ADD_ADDRESS';
+  static const STORE_HOME = '/store/:store_slug';
+  static const STORE_PRODUCTS = '/store/:store_slug/products';
+  static const STORE_PRODUCT_DETAIL = '/store/:store_slug/products/:product_slug';
+  static const STORE_CATEGORY_PRODUCTS =
+      '/store/:store_slug/category/:category_id';
+  static const STORE_CART = '/store/:store_slug/cart';
+  static const STORE_CHECKOUT = '/store/:store_slug/checkout';
+  static const STORE_ORDERS = '/store/:store_slug/orders';
+  static const STORE_ORDER_DETAIL = '/store/:store_slug/order/:order_id';
+  static const STORE_SEARCH = '/store/:store_slug/search';
+  static const STORE_TODAY_DEALS = '/store/:store_slug/today-deals';
+  static const STORE_FEATURED_PRODUCTS =
+      '/store/:store_slug/featured-products';
+  static const PREFERRED_STORES = '/customer/preferred-stores';
+  static const STORE_PROFILE = '/store-profile';
+  static const QR_SCAN = '/qr-scan';
 }

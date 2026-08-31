@@ -171,6 +171,9 @@ class ProductModel {
   final String? addedBy;
   final int? userId;
   final int? shopId;
+  final int? storeId;
+  final int? storeProductId;
+  final int? productId;
   final int? categoryId;
   final int? brandId;
 
@@ -262,6 +265,9 @@ class ProductModel {
     this.addedBy,
     this.userId,
     this.shopId,
+    this.storeId,
+    this.storeProductId,
+    this.productId,
     this.categoryId,
     this.brandId,
     this.photos,
@@ -341,6 +347,9 @@ class ProductModel {
       addedBy: _asNullableString(json['added_by']),
       userId: _asNullableInt(json['user_id']),
       shopId: _asNullableInt(json['shop_id']),
+      storeId: _asNullableInt(json['store_id']),
+      storeProductId: _asNullableInt(json['store_product_id']),
+      productId: _asNullableInt(json['product_id']),
       categoryId: _asNullableInt(json['category_id']),
       brandId: _asNullableInt(json['brand_id']),
       photos: _asNullableString(json['photos']),
@@ -439,6 +448,9 @@ class ProductModel {
       'added_by': addedBy,
       'user_id': userId,
       'shop_id': shopId,
+      'store_id': storeId,
+      'store_product_id': storeProductId,
+      'product_id': productId,
       'category_id': categoryId,
       'brand_id': brandId,
       'photos': photos,

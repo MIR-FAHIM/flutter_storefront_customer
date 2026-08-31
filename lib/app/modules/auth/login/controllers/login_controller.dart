@@ -4,6 +4,7 @@ import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
 import 'package:ecom_user_flutter/app/services/firebase_messaging_service%20copy.dart';
 import 'package:ecom_user_flutter/app/services/location_service.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:ecom_user_flutter/common/ui.dart';
 import 'package:ecom_user_flutter/service/shared_pref.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -182,7 +183,15 @@ class LoginController extends GetxController {
 
           Get.find<AuthService>().setUser(model);
           Get.back();
-          Get.offAllNamed(Routes.ROOT);
+          final redirect = Get.find<StoreContextService>().consumeLoginRedirect();
+          if (redirect != null) {
+            Get.offAllNamed(
+              redirect['route'].toString(),
+              arguments: redirect['arguments'],
+            );
+          } else {
+            Get.offAllNamed(Routes.ROOT);
+          }
         } catch (e) {
           Get.back();
           Get.showSnackbar(

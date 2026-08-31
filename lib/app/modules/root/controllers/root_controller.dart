@@ -1,8 +1,6 @@
 
 import 'package:ecom_user_flutter/app/modules/cart/view/cart_view.dart';
-import 'package:ecom_user_flutter/app/modules/category/view/all_category_view.dart';
-import 'package:ecom_user_flutter/app/modules/delivery/view/my_delivery_tab.dart';
-import 'package:ecom_user_flutter/app/modules/home/views/profile_view.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/view/preferred_store_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -47,7 +45,7 @@ class RootController extends GetxController {
     CartView(),
     //MyAttendanceReportPage(),
 
-    ProfileView(),
+    PreferredStoreScreen(),
 
   ];
 

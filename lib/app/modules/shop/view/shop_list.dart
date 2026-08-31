@@ -1,8 +1,6 @@
 import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
 import 'package:ecom_user_flutter/app/models/ecom/product/shop_model.dart';
-import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
 import 'package:ecom_user_flutter/app/modules/shop/controller/shop_controller.dart';
-import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/common/Color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -54,7 +52,7 @@ class ShopListView extends GetView<ShopController> {
             crossAxisCount: 2,
             mainAxisSpacing: 14,
             crossAxisSpacing: 14,
-            childAspectRatio: 0.82,
+            childAspectRatio: 0.72,
           ),
           itemCount: shops.length,
           itemBuilder: (_, index) {
@@ -84,10 +82,7 @@ class _ShopCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
-
-
-        Get.find<ProductController>().openShopProducts(item.id);
-
+        Get.find<ShopController>().openStore(item);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -168,6 +163,47 @@ class _ShopCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 30,
+                    child: Obx(() {
+                      final shopController = Get.find<ShopController>();
+                      final isAdded = shopController.isStorePreferred(item);
+                      final isLoading = shopController.isAddingPreference.value;
+
+                      return OutlinedButton(
+                        onPressed: isAdded || isLoading
+                            ? null
+                            : () {
+                                shopController.addStorePreference(item);
+                              },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          side: BorderSide(
+                            color: isAdded
+                                ? const Color(0xFF16A34A)
+                                : AppColors.primaryColor,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          isAdded ? 'Added' : 'Add Preference',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isAdded
+                                ? const Color(0xFF16A34A)
+                                : AppColors.primaryColor,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 10,
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ),

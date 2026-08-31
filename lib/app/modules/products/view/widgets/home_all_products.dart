@@ -13,11 +13,9 @@ class HomeAllProductsSection extends GetView<ProductController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final loading = controller.isFeaturedLoading.value;
+      final loading = controller.isHomeAllProductsLoading.value;
 
-      // Use controller.products as the All Product source.
-      // This follows your existing controller where `products` is the main featured/all product list.
-      final allProducts = controller.products;
+      final allProducts = controller.homeAllProducts;
       final visibleProducts = allProducts.take(14).toList();
 
       if (loading && allProducts.isEmpty) {
@@ -38,7 +36,10 @@ class HomeAllProductsSection extends GetView<ProductController> {
             _SectionHeader(
               title: "All Product",
               onSeeAllTap: () {
-                Get.toNamed(Routes.PRODUCT_FILTER);
+                final slug = controller.activeStoreSlug;
+                Get.toNamed(
+                  slug == null ? Routes.PRODUCT_FILTER : '/store/$slug/products',
+                );
               },
             ),
 
@@ -60,7 +61,12 @@ class HomeAllProductsSection extends GetView<ProductController> {
                   if (index == visibleProducts.length) {
                     return _SeeAllProductCard(
                       onTap: () {
-                        Get.toNamed(Routes.PRODUCT_FILTER);
+                        final slug = controller.activeStoreSlug;
+                        Get.toNamed(
+                          slug == null
+                              ? Routes.PRODUCT_FILTER
+                              : '/store/$slug/products',
+                        );
                       },
                     );
                   }

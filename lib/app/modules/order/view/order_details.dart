@@ -2,6 +2,7 @@
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/modules/order/controller/order_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
+import 'package:ecom_user_flutter/app/routes/store_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -732,7 +733,7 @@ class _BottomActions extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-              Get.offAllNamed(Routes.ROOT);
+              offAllToStoreHomeOrRoot();
             },
             icon: const Icon(Icons.shopping_bag_outlined),
             label: const Text(

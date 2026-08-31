@@ -17,6 +17,9 @@ import 'package:ecom_user_flutter/app/modules/delivery/view/my_delivery_tab.dart
 import 'package:ecom_user_flutter/app/modules/delivery/view/pending_delivery_view.dart';
 import 'package:ecom_user_flutter/app/modules/order/binding/order_binding.dart';
 import 'package:ecom_user_flutter/app/modules/order/view/order_details.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/binding/preferred_store_binding.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/view/preferred_store_screen.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/view/store_profile_view.dart';
 import 'package:ecom_user_flutter/app/modules/products/binding/product_binding.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/category_wised_products.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/product_detail.dart';
@@ -30,6 +33,9 @@ import 'package:ecom_user_flutter/app/modules/webview/bindings/webview_binding.d
 import 'package:ecom_user_flutter/app/modules/webview/views/webview_view.dart';
 import 'package:ecom_user_flutter/app/modules/wishlist/binding/wishlist_binding.dart';
 import 'package:ecom_user_flutter/app/modules/wishlist/view/wish_list_view.dart';
+import 'package:ecom_user_flutter/app/modules/qr_scan/bindings/qr_scan_binding.dart';
+import 'package:ecom_user_flutter/app/modules/qr_scan/views/qr_scan_view.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 
 import 'package:get/get.dart';
 import '../modules/home/bindings/home_binding.dart';
@@ -40,6 +46,13 @@ import '../modules/root/views/root_view.dart';
 import '../modules/splashscreen/bindings/splashscreen_binding.dart';
 import '../modules/splashscreen/views/splashscreen_view.dart';
 part 'app_routes.dart';
+
+void _activateStoreFromRoute() {
+  final slug = Get.parameters['store_slug'] ?? Get.parameters['slug'];
+  if (slug != null && slug.trim().isNotEmpty) {
+    Get.find<StoreContextService>().setActiveStoreFromRoute(slug);
+  }
+}
 
 class AppPages {
   AppPages._();
@@ -189,6 +202,109 @@ class AppPages {
       name: _Paths.WISH_LIST,
       page: () => WishListView(),
       binding: WishlistBinding(),
+    ),
+    GetPage(
+      name: _Paths.PREFERRED_STORES,
+      page: () => const PreferredStoreScreen(),
+      binding: PreferredStoreBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_PROFILE,
+      page: () => const StoreProfileView(),
+      binding: PreferredStoreBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_HOME,
+      page: () {
+        _activateStoreFromRoute();
+        return RootView();
+      },
+      binding: RootBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_PRODUCTS,
+      page: () {
+        _activateStoreFromRoute();
+        return ProductFilterPage();
+      },
+      binding: ProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_PRODUCT_DETAIL,
+      page: () {
+        _activateStoreFromRoute();
+        return ProductDetailPage();
+      },
+      binding: ProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_CATEGORY_PRODUCTS,
+      page: () {
+        _activateStoreFromRoute();
+        return CategoryWisedProducts();
+      },
+      binding: ProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_CART,
+      page: () {
+        _activateStoreFromRoute();
+        return CartView();
+      },
+      binding: CartBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_CHECKOUT,
+      page: () {
+        _activateStoreFromRoute();
+        return ProceedOrderPage();
+      },
+      binding: CartBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_ORDERS,
+      page: () {
+        _activateStoreFromRoute();
+        return OrderHistoryPage();
+      },
+      binding: OrderBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_ORDER_DETAIL,
+      page: () {
+        _activateStoreFromRoute();
+        return OrderDetailsView();
+      },
+      binding: OrderBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_SEARCH,
+      page: () {
+        _activateStoreFromRoute();
+        return ProductFilterPage();
+      },
+      binding: ProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_TODAY_DEALS,
+      page: () {
+        _activateStoreFromRoute();
+        return TodayDealProducts();
+      },
+      binding: ProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.STORE_FEATURED_PRODUCTS,
+      page: () {
+        _activateStoreFromRoute();
+        return ProductFilterPage();
+      },
+      binding: ProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.QR_SCAN,
+      page: () => QrScanView(),
+      binding: QrScanBinding(),
     ),
   ];
 }

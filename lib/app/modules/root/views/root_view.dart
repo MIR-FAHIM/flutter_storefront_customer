@@ -1,5 +1,6 @@
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/modules/delivery/controller/delivery_controller.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_controller.dart';
 import 'package:ecom_user_flutter/common/Color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -93,11 +94,19 @@ class RootView extends GetView<RootController> {
                       },
                     ),
                     _SmartBottomBarItem(
-                      icon: 'assets/icons/avatar.png',
-                      label: 'Profile',
+                      iconData: Icons.storefront_rounded,
+                      label: 'Store',
                       isSelected: controller.currentIndex.value == 3,
                       onTap: () {
                         controller.currentIndex.value = 3;
+                        if (!Get.isRegistered<PreferredStoreController>()) {
+                          Get.lazyPut<PreferredStoreController>(
+                            () => PreferredStoreController(),
+                            fenix: true,
+                          );
+                        }
+                        Get.find<PreferredStoreController>()
+                            .getPreferredStores(reset: true);
                       },
                     ),
                   ],
@@ -113,15 +122,17 @@ class RootView extends GetView<RootController> {
 
 class _SmartBottomBarItem extends StatelessWidget {
   const _SmartBottomBarItem({
-    required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.icon,
+    this.iconData,
     this.count = 0,
     this.isCart = false,
   });
 
-  final String icon;
+  final String? icon;
+  final IconData? iconData;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
@@ -159,12 +170,18 @@ class _SmartBottomBarItem extends StatelessWidget {
                   AnimatedScale(
                     duration: const Duration(milliseconds: 180),
                     scale: isSelected ? 1.12 : 1.0,
-                    child: Image.asset(
-                      icon,
-                      height: 23,
-                      width: 23,
-                      color: activeColor,
-                    ),
+                    child: iconData == null
+                        ? Image.asset(
+                            icon!,
+                            height: 23,
+                            width: 23,
+                            color: activeColor,
+                          )
+                        : Icon(
+                            iconData,
+                            size: 24,
+                            color: activeColor,
+                          ),
                   ),
 
                   if (isCart && count > 0)

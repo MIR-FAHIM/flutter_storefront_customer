@@ -3,6 +3,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:ecom_user_flutter/app/api_providers/api_manager.dart';
 import 'package:ecom_user_flutter/app/api_providers/api_url.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 
 class OrderRepository {
   final userdata = GetStorage();
@@ -13,6 +14,8 @@ class OrderRepository {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
       };
+
+  String? get _storeSlug => Get.find<StoreContextService>().storeSlugOrNull;
 
   /// User login api call
   userLogin(String phoneNumber, String pass, String fcm) async {
@@ -56,9 +59,19 @@ class OrderRepository {
 
   getCart() async {
     APIManager _manager = APIManager();
-    final response = await _manager.getWithHeader(
+    final params = <String, dynamic>{};
+    final slug = _storeSlug;
+    if (slug != null && slug.isNotEmpty) params['store_slug'] = slug;
+    final uri = Uri.parse(
       ApiClient.activeCart +
           Get.find<AuthService>().currentUser.value.data!.user!.id.toString(),
+    ).replace(
+      queryParameters: params.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
+    );
+    final response = await _manager.getWithHeader(
+      uri.toString(),
       header,
     );
 
@@ -107,6 +120,11 @@ class OrderRepository {
   }
 
   checkout(data) async {
+    final slug = _storeSlug;
+    if (slug != null && slug.isNotEmpty && data is Map) {
+      data['store_slug'] = slug;
+    }
+
     APIManager _manager = APIManager();
     final response = await _manager.postAPICallWithHeader(
       ApiClient.checkout,
@@ -120,6 +138,11 @@ class OrderRepository {
   }
 
   initiateAamarPayPayment(data) async {
+    final slug = _storeSlug;
+    if (slug != null && slug.isNotEmpty && data is Map) {
+      data['store_slug'] = slug;
+    }
+
     APIManager _manager = APIManager();
     final response = await _manager.postAPICallWithHeader(
       ApiClient.initiateAamarPayPayment,

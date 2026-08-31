@@ -99,7 +99,7 @@ class ProductCard extends GetWidget<ProductController> {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap ??
             () {
-              controller.getProductDetail(product.id);
+              controller.openProductDetail(product);
             },
         child: Container(
           width: width,

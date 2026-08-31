@@ -1,6 +1,7 @@
 import 'package:ecom_user_flutter/app/models/ecom/order/checkout_success.dart';
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
+import 'package:ecom_user_flutter/app/routes/store_navigation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -618,7 +619,7 @@ class _ActionButtons extends StatelessWidget {
                 ),
               ),
               onPressed: () {
-                Get.offAllNamed(Routes.ROOT);
+                offAllToStoreHomeOrRoot();
               },
               icon: const Icon(
                 Icons.shopping_cart_outlined,
@@ -833,7 +834,7 @@ class _EmptyCheckoutState extends StatelessWidget {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                Get.offAllNamed(Routes.ROOT);
+                offAllToStoreHomeOrRoot();
               },
               child: const Text(
                 'Back to Home',

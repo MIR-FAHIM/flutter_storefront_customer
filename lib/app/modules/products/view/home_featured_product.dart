@@ -34,7 +34,12 @@ class HomeFeaturedProductsSection extends GetView<ProductController> {
             _SectionHeader(
               title: "Featured Product",
               onSeeAllTap: () {
-                Get.toNamed(Routes.PRODUCT_FILTER);
+                final slug = controller.activeStoreSlug;
+                Get.toNamed(
+                  slug == null
+                      ? Routes.PRODUCT_FILTER
+                      : '/store/$slug/featured-products',
+                );
               },
             ),
 

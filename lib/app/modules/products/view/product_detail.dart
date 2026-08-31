@@ -4,11 +4,17 @@ import 'package:ecom_user_flutter/app/modules/products/controller/product_contro
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/product_card_widget.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/html_sanitizer.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
+
+void _goToActiveStoreCart() {
+  final slug = Get.find<StoreContextService>().storeSlugOrNull;
+  Get.toNamed(slug == null ? Routes.CART_VIEW : '/store/$slug/cart');
+}
 
 class ProductDetailPage extends GetView<ProductController> {
   const ProductDetailPage({super.key});
@@ -55,6 +61,7 @@ class ProductDetailPage extends GetView<ProductController> {
         backgroundColor: Colors.white,
         bottomNavigationBar: _BottomActionBar(
           controller: controller,
+          product: product,
           productId: productId,
           maxStock: maxStock,
           unitPriceValue: unitPriceValue,
@@ -671,7 +678,7 @@ class _CartTopIconButton extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: () {
-            Get.toNamed(Routes.CART_VIEW);
+            _goToActiveStoreCart();
           },
           child: SizedBox(
             height: 36,
@@ -2075,10 +2082,7 @@ class _TopSellingCard extends StatelessWidget {
         final id = _ProductDetailHelper._productId(product);
 
         if (id.isNotEmpty) {
-          final productId = int.tryParse(id);
-          if (productId != null) {
-            Get.find<ProductController>().getProductDetail(productId);
-          }
+          Get.find<ProductController>().getProductDetail(id);
         }
       },
       child: Container(
@@ -2199,6 +2203,7 @@ class _SectionHeader extends StatelessWidget {
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.controller,
+    required this.product,
     required this.productId,
     required this.maxStock,
     required this.unitPriceValue,
@@ -2206,6 +2211,7 @@ class _BottomActionBar extends StatelessWidget {
   });
 
   final ProductController controller;
+  final dynamic product;
   final String productId;
   final int maxStock;
   final double unitPriceValue;
@@ -2233,7 +2239,7 @@ class _BottomActionBar extends StatelessWidget {
             InkWell(
               borderRadius: BorderRadius.circular(14),
               onTap: () {
-                Get.toNamed(Routes.CART_VIEW);
+                _goToActiveStoreCart();
               },
               child: Container(
                 height: 48,
@@ -2313,6 +2319,7 @@ class _BottomActionBar extends StatelessWidget {
                     controller.addToCart(
                       productId: productId,
                       qty: controller.quantity.value,
+                      product: product,
                     );
                   },
                   style: ElevatedButton.styleFrom(

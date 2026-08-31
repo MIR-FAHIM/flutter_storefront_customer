@@ -15,6 +15,7 @@ import 'package:ecom_user_flutter/app/services/auth_service.dart';
 import 'package:ecom_user_flutter/app/services/firebase_messaging_service.dart';
 import 'package:ecom_user_flutter/app/services/location_service.dart';
 import 'package:ecom_user_flutter/app/services/settings_service.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:ecom_user_flutter/app/services/translation_service.dart';
 import 'package:ecom_user_flutter/service/shared_pref.dart';
 import 'app/routes/app_pages.dart';
@@ -92,6 +93,7 @@ initServices() async {
   await Get.putAsync<SettingsController>(() async => SettingsController());
   await Get.putAsync<LanguageController>(() async => LanguageController());
   await Get.putAsync<AuthService>(() async => AuthService());
+  await Get.putAsync<StoreContextService>(() async => StoreContextService());
   await Get.putAsync(() => TranslationService().init());
 
   await Get.putAsync<LocationService>(() async => LocationService());

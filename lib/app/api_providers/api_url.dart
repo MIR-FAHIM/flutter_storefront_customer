@@ -32,6 +32,8 @@ class ApiClient {
   // ==============================
   static const String createCategory = '$baseUrl/api/categories/create';
   static const String getCategory = '$baseUrl/api/categories/list';
+  static const String publicStoreCategories =
+      '$baseUrl/api/public/stores/'; // {slug}/categories
   static const String categoryDetails =
       '$baseUrl/api/categories/details/'; // {id}
   static const String categoryChildren =
@@ -80,6 +82,14 @@ class ApiClient {
   static const String updateShop = '$baseUrl/api/shops/update/'; // {id}
   static const String updateShopStatus = '$baseUrl/api/shops/status/'; // {id}
   static const String deleteShop = '$baseUrl/api/shops/delete/'; // {id}
+  static const String addSellerPreference =
+      '$baseUrl/api/customer-preferences-store/add-seller-preference';
+  static const String preferredStores =
+      '$baseUrl/api/customer-preferences-store/sellers-by-customer';
+  static const String setActiveSellerPreference =
+      '$baseUrl/api/customer-preferences-store/set-active';
+  static const String removeSellerPreference =
+      '$baseUrl/api/customer-preferences-store/remove';
 
   // ==============================
   // CART

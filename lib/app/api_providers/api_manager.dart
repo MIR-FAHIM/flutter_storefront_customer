@@ -221,6 +221,31 @@ class APIManager {
     return responseJson;
   }
 
+  Future<dynamic> deleteAPICallWithHeader(
+      String url, var param, Map<String, String> headerData) async {
+    print("Calling API: $url");
+    print("Calling parameters: $param");
+    print('token: $headerData');
+    var responseJson;
+    try {
+      final request = http.Request('DELETE', Uri.parse(url));
+      request.headers.addAll(headerData);
+      if (param is Map && param.isNotEmpty) {
+        request.bodyFields = param.map(
+          (key, value) => MapEntry(key.toString(), value.toString()),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      print(response.body);
+      responseJson = _response(response);
+    } on SocketException {
+      throw FetchDataException('No Internet connection');
+    }
+    return responseJson;
+  }
+
   Future<dynamic> getWithHeaderAndParam(
     String url, {
     Map<String, String>? headers,

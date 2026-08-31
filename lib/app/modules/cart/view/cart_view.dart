@@ -5,6 +5,7 @@ import 'package:ecom_user_flutter/app/models/ecom/order/cart_model.dart';
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/modules/root/controllers/root_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
+import 'package:ecom_user_flutter/app/routes/store_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -30,7 +31,7 @@ class CartView extends GetView<CartController> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
           onPressed: () {
             Get.find<RootController>().currentIndex.value = 0;
-            Get.offNamed(Routes.ROOT);
+            offToStoreHomeOrRoot();
           },
         ),
         title: Text(
@@ -73,7 +74,7 @@ class CartView extends GetView<CartController> {
           return _EmptyState(
             onShopNow: () {
               Get.find<RootController>().currentIndex.value = 0;
-              Get.offNamed(Routes.ROOT);
+              offToStoreHomeOrRoot();
             },
           );
         }
