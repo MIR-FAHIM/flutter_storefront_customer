@@ -18,6 +18,7 @@ import 'package:ecom_user_flutter/app/modules/delivery/view/pending_delivery_vie
 import 'package:ecom_user_flutter/app/modules/order/binding/order_binding.dart';
 import 'package:ecom_user_flutter/app/modules/order/view/order_details.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/binding/preferred_store_binding.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/view/preferred_store_code_lookup_page.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/view/preferred_store_screen.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/view/store_profile_view.dart';
 import 'package:ecom_user_flutter/app/modules/products/binding/product_binding.dart';
@@ -206,6 +207,11 @@ class AppPages {
     GetPage(
       name: _Paths.PREFERRED_STORES,
       page: () => const PreferredStoreScreen(),
+      binding: PreferredStoreBinding(),
+    ),
+    GetPage(
+      name: _Paths.PREFERRED_STORE_CODE_LOOKUP,
+      page: () => const PreferredStoreCodeLookupPage(),
       binding: PreferredStoreBinding(),
     ),
     GetPage(

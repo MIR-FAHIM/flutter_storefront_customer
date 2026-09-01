@@ -21,13 +21,14 @@ class CategoryResModel {
     this.data,
   });
 
-  factory CategoryResModel.fromJson(Map<String, dynamic> json) => CategoryResModel(
-    status: json["status"] as String?,
-    message: json["message"] as String?,
-    data: json["data"] == null
-        ? null
-        : CategoryPageData.fromJson(json["data"] as Map<String, dynamic>),
-  );
+  factory CategoryResModel.fromJson(Map<String, dynamic> json) {
+    final rawData = json["data"];
+    return CategoryResModel(
+      status: json["status"] as String?,
+      message: json["message"] as String?,
+      data: rawData == null ? null : CategoryPageData.fromDynamic(rawData),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "status": status,
@@ -71,8 +72,9 @@ class CategoryPageData {
     currentPage: _asInt(json["current_page"]),
     data: (json["data"] is List)
         ? (json["data"] as List)
-        .map((x) => CategoryItem.fromJson(x as Map<String, dynamic>))
-        .toList()
+            .whereType<Map>()
+            .map((x) => CategoryItem.fromJson(Map<String, dynamic>.from(x)))
+            .toList()
         : <CategoryItem>[],
     firstPageUrl: json["first_page_url"] as String?,
     from: _asInt(json["from"]),
@@ -80,8 +82,9 @@ class CategoryPageData {
     lastPageUrl: json["last_page_url"] as String?,
     links: (json["links"] is List)
         ? (json["links"] as List)
-        .map((x) => PageLink.fromJson(x as Map<String, dynamic>))
-        .toList()
+            .whereType<Map>()
+            .map((x) => PageLink.fromJson(Map<String, dynamic>.from(x)))
+            .toList()
         : <PageLink>[],
     nextPageUrl: json["next_page_url"] as String?,
     path: json["path"] as String?,
@@ -90,6 +93,29 @@ class CategoryPageData {
     to: _asInt(json["to"]),
     total: _asInt(json["total"]),
   );
+
+  factory CategoryPageData.fromDynamic(dynamic value) {
+    if (value is List) {
+      final items = value
+          .whereType<Map>()
+          .map((x) => CategoryItem.fromJson(Map<String, dynamic>.from(x)))
+          .toList();
+      return CategoryPageData(
+        currentPage: 1,
+        data: items,
+        lastPage: 1,
+        links: const <PageLink>[],
+        perPage: items.length,
+        total: items.length,
+      );
+    }
+
+    if (value is Map) {
+      return CategoryPageData.fromJson(Map<String, dynamic>.from(value));
+    }
+
+    return const CategoryPageData(data: <CategoryItem>[], links: <PageLink>[]);
+  }
 
   Map<String, dynamic> toJson() => {
     "current_page": currentPage,
@@ -154,11 +180,11 @@ class CategoryItem {
     name: json["name"] as String?,
     orderLevel: _asInt(json["order_level"]),
     commisionRate: _asNum(json["commision_rate"]),
-    banner: json["banner"] == null
-        ? null
-        : MediaImage.fromJson(json["banner"] as Map<String, dynamic>),
-    icon: json["icon"]?.toString(),
-    coverImage: json["cover_image"]?.toString(),
+    banner: _mediaImage(json["banner"]) ??
+        _mediaImage(json["cover_image"]) ??
+        _mediaImage(json["icon"]),
+    icon: _mediaUrlOrValue(json["icon"]),
+    coverImage: _mediaUrlOrValue(json["cover_image"]),
     featured: _asInt(json["featured"]),
     top: _asInt(json["top"]),
     digital: _asInt(json["digital"]),
@@ -316,4 +342,20 @@ DateTime? _asDate(dynamic v) {
   if (v is DateTime) return v;
   if (v is String) return DateTime.tryParse(v);
   return null;
+}
+
+MediaImage? _mediaImage(dynamic value) {
+  if (value is Map) {
+    return MediaImage.fromJson(Map<String, dynamic>.from(value));
+  }
+  return null;
+}
+
+String? _mediaUrlOrValue(dynamic value) {
+  if (value == null) return null;
+  if (value is Map) {
+    final map = Map<String, dynamic>.from(value);
+    return map["url"]?.toString() ?? map["file_name"]?.toString();
+  }
+  return value.toString();
 }

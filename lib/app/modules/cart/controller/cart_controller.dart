@@ -265,7 +265,41 @@ class CartController extends GetxController {
 
   Future<void> addAddressController() async {
     if (!validateAddressForm()) return;
+    await addAddress(
+      mobile: mobileController.value.text.trim(),
+      district: districtController.value.text.trim(),
+      area: areaController.value.text.trim(),
+      address: addressController.value.text.trim(),
+    );
+  }
+
+  Future<void> addAddress({
+    required String mobile,
+    required String district,
+    required String area,
+    required String address,
+  }) async {
     if (isAddressAdding.value) return;
+
+    if (mobile.trim().isEmpty) {
+      Get.snackbar('Required', 'Mobile number is required');
+      return;
+    }
+
+    if (district.trim().isEmpty) {
+      Get.snackbar('Required', 'District is required');
+      return;
+    }
+
+    if (area.trim().isEmpty) {
+      Get.snackbar('Required', 'Area is required');
+      return;
+    }
+
+    if (address.trim().isEmpty) {
+      Get.snackbar('Required', 'Address is required');
+      return;
+    }
 
     isAddressAdding.value = true;
     error.value = '';
@@ -281,11 +315,11 @@ class CartController extends GetxController {
     final Map data = {
       'user_id': user.id.toString(),
       'name': user.name.toString(),
-      'mobile': mobileController.value.text.trim(),
-      'division': districtController.value.text.trim(),
-      'district': districtController.value.text.trim(),
-      'area': areaController.value.text.trim(),
-      'address': addressController.value.text.trim(),
+      'mobile': mobile.trim(),
+      'division': district.trim(),
+      'district': district.trim(),
+      'area': area.trim(),
+      'address': address.trim(),
     };
 
     try {

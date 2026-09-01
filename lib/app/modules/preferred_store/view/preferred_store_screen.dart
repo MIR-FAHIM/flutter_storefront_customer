@@ -23,6 +23,23 @@ class PreferredStoreScreen extends GetView<PreferredStoreController> {
         title: const Text('Preferred Stores'),
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
+        actions: [
+          TextButton.icon(
+            onPressed: () => Get.toNamed(Routes.PREFERRED_STORE_CODE_LOOKUP),
+            icon: const Icon(
+              Icons.add_business_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            label: const Text(
+              'Find New Shop',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.preferredStores.isEmpty) {
@@ -217,7 +234,10 @@ class _PreferredStoreCard extends GetView<PreferredStoreController> {
                             ElevatedButton(
                               onPressed: activating
                                   ? null
-                                  : () => controller.setActiveStore(item),
+                                  : () => controller.setActiveStore(
+                                        item,
+                                        goToStoreHome: true,
+                                      ),
                               child: activating
                                   ? const SizedBox(
                                 width: 16,
@@ -249,7 +269,7 @@ class _PreferredStoreCard extends GetView<PreferredStoreController> {
     if (slug == null || slug.isEmpty) return;
 
     if (!controller.isActive(item)) {
-      controller.setActiveStore(item);
+      controller.setActiveStore(item, goToStoreHome: true);
       return;
     }
 

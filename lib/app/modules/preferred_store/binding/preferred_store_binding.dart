@@ -1,4 +1,5 @@
 import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_controller.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_code_lookup_controller.dart';
 import 'package:get/get.dart';
 
 class PreferredStoreBinding extends Bindings {
@@ -7,6 +8,9 @@ class PreferredStoreBinding extends Bindings {
     Get.lazyPut<PreferredStoreController>(
       () => PreferredStoreController(),
       fenix: true,
+    );
+    Get.lazyPut<PreferredStoreCodeLookupController>(
+      () => PreferredStoreCodeLookupController(),
     );
   }
 }

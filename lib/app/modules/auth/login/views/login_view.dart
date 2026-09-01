@@ -1,5 +1,6 @@
 // lib/app/modules/auth/views/login_view.dart
 import 'dart:ui';
+import 'package:ecom_user_flutter/app/app_info.dart';
 import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
 import 'package:ecom_user_flutter/app/modules/global_widgets/block_button_widget.dart';
 import 'package:ecom_user_flutter/app/modules/global_widgets/text_field_widget.dart';
@@ -97,6 +98,15 @@ class LoginView extends GetView<LoginController> {
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        AppInfo.versionLabel,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withOpacity(0.78),
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ],
                   ),

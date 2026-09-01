@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:ecom_user_flutter/app/api_providers/api_manager.dart';
+import 'package:ecom_user_flutter/app/api_providers/api_url.dart';
 import 'package:ecom_user_flutter/app/models/ecom/product/shop_model.dart';
 import 'package:ecom_user_flutter/app/repositories/product_rep.dart';
+import 'package:ecom_user_flutter/models/ecom/product/shop_profile_model.dart';
 
 class QrStorePayload {
   final String slug;
@@ -12,6 +15,11 @@ class QrStorePayload {
 
 class QrScanRepository {
   Future<QrStorePayload> resolveQrCode(String qrData) async {
+    final shopCode = _shopCodeFromQrData(qrData);
+    if (shopCode != null) {
+      return _resolveShopCode(shopCode);
+    }
+
     final payload = parseQrCode(qrData);
     if (payload.sellerId != null) return payload;
 
@@ -39,6 +47,23 @@ class QrScanRepository {
     final sellerId = matchedShop?.userId ?? matchedShop?.user?.id;
     if (sellerId == null) throw Exception('Store seller could not be found');
     return QrStorePayload(slug: payload.slug, sellerId: sellerId);
+  }
+
+  Future<QrStorePayload> _resolveShopCode(String code) async {
+    final response = await APIManager().get('${ApiClient.findShopByCode}$code');
+    if (response is! Map<String, dynamic> || response['status'] != 'success') {
+      throw Exception('No active store found for this code.');
+    }
+
+    final model = ShopProfileResponse.fromJson(response);
+    final shop = model.data;
+    final slug = shop?.slug?.trim() ?? '';
+    final sellerId = shop?.userId;
+
+    if (slug.isEmpty) throw Exception('Store slug is missing from shop profile');
+    if (sellerId == null) throw Exception('Store seller could not be found');
+
+    return QrStorePayload(slug: slug, sellerId: sellerId);
   }
 
   QrStorePayload parseQrCode(String qrData) {
@@ -89,4 +114,23 @@ class QrScanRepository {
   }
 
   int? _int(dynamic value) => value == null ? null : int.tryParse(value.toString());
+
+  String? _shopCodeFromQrData(String qrData) {
+    final raw = qrData.trim();
+    if (RegExp(r'^\d{6}$').hasMatch(raw)) return raw;
+
+    final decoded = _decodeJson(raw);
+    final jsonCode = decoded == null ? null : _string(decoded['code']);
+    if (jsonCode != null && RegExp(r'^\d{6}$').hasMatch(jsonCode)) {
+      return jsonCode;
+    }
+
+    final uri = Uri.tryParse(raw);
+    final queryCode = uri == null ? null : _string(uri.queryParameters['code']);
+    if (queryCode != null && RegExp(r'^\d{6}$').hasMatch(queryCode)) {
+      return queryCode;
+    }
+
+    return null;
+  }
 }

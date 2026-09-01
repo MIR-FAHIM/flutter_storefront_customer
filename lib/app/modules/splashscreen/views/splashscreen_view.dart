@@ -1,4 +1,4 @@
-import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
+import 'package:ecom_user_flutter/app/app_info.dart';
 import 'package:ecom_user_flutter/common/Color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -29,11 +29,25 @@ class SplashscreenView extends GetView<SplashscreenController> {
               ),
             ),
             Positioned(
-              bottom: 10,
+              bottom: 36,
               right: 0,
               left: 0,
               child: Ui.customLoaderSplash(),
-            )
+            ),
+            Positioned(
+              bottom: 10,
+              right: 0,
+              left: 0,
+              child: Text(
+                AppInfo.versionLabel,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.72),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ],
         ),
       ),

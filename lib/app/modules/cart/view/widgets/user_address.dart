@@ -250,8 +250,29 @@ class _EmptyAddressState extends StatelessWidget {
   }
 }
 
-class _AddAddressSheet extends GetWidget<CartController> {
+class _AddAddressSheet extends StatefulWidget {
   const _AddAddressSheet();
+
+  @override
+  State<_AddAddressSheet> createState() => _AddAddressSheetState();
+}
+
+class _AddAddressSheetState extends State<_AddAddressSheet> {
+  final mobileController = TextEditingController();
+  final districtController = TextEditingController();
+  final areaController = TextEditingController();
+  final addressController = TextEditingController();
+
+  CartController get controller => Get.find<CartController>();
+
+  @override
+  void dispose() {
+    mobileController.dispose();
+    districtController.dispose();
+    areaController.dispose();
+    addressController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +317,7 @@ class _AddAddressSheet extends GetWidget<CartController> {
             const SizedBox(height: 10),
 
             _AddressTextField(
-              controller: controller.mobileController.value,
+              controller: mobileController,
               label: 'Mobile',
               hint: 'Enter mobile number',
               icon: Icons.phone_outlined,
@@ -306,7 +327,7 @@ class _AddAddressSheet extends GetWidget<CartController> {
             const SizedBox(height: 10),
 
             _AddressTextField(
-              controller: controller.districtController.value,
+              controller: districtController,
               label: 'District',
               hint: 'Enter district',
               icon: Icons.location_city_outlined,
@@ -315,7 +336,7 @@ class _AddAddressSheet extends GetWidget<CartController> {
             const SizedBox(height: 10),
 
             _AddressTextField(
-              controller: controller.areaController.value,
+              controller: areaController,
               label: 'Area',
               hint: 'Enter area',
               icon: Icons.map_outlined,
@@ -324,7 +345,7 @@ class _AddAddressSheet extends GetWidget<CartController> {
             const SizedBox(height: 10),
 
             _AddressTextField(
-              controller: controller.addressController.value,
+              controller: addressController,
               label: 'Full Address',
               hint: 'House, road, block, landmark',
               icon: Icons.home_work_outlined,
@@ -340,7 +361,12 @@ class _AddAddressSheet extends GetWidget<CartController> {
                 child: ElevatedButton.icon(
                   onPressed: controller.isAddressAdding.value
                       ? null
-                      : controller.addAddressController,
+                      : () => controller.addAddress(
+                            mobile: mobileController.text,
+                            district: districtController.text,
+                            area: areaController.text,
+                            address: addressController.text,
+                          ),
                   icon: controller.isAddressAdding.value
                       ? const SizedBox(
                     width: 18,

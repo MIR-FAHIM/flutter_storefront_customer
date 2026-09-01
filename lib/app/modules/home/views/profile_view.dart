@@ -1,4 +1,5 @@
 // lib/app/modules/home/views/profile_view.dart
+import 'package:ecom_user_flutter/app/app_info.dart';
 import 'package:ecom_user_flutter/app/modules/home/controllers/home_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
@@ -141,8 +142,16 @@ class ProfileView extends GetView<HomeController> {
                     ),
                   ),
                 ),
-            SizedBox(
-              height: 10,),
+                SizedBox(
+                  height: 10,),
+                Text(
+                  AppInfo.versionLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.black45,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 // Secondary action (Logout/clear session)
                 SizedBox(
@@ -377,7 +386,7 @@ class ProfileView extends GetView<HomeController> {
                             // Menu list card
                             _CardShell(
                               child: Column(
-                                children: const [
+                                children: [
                                   _MenuRow(
                                       icon: Icons.inventory_2_outlined,
                                       title: "Top Selling Products"),
@@ -407,6 +416,8 @@ class ProfileView extends GetView<HomeController> {
                                     title: "Delete my account",
                                     danger: true,
                                   ),
+                                  const _DividerLine(),
+                                  const _AppVersionRow(),
                                 ],
                               ),
                             ),
@@ -422,6 +433,34 @@ class ProfileView extends GetView<HomeController> {
         );
       }
     });
+  }
+}
+
+class _AppVersionRow extends StatelessWidget {
+  const _AppVersionRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: Colors.black54, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              AppInfo.versionLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

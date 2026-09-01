@@ -45,6 +45,7 @@ abstract class Routes {
   static const STORE_TODAY_DEALS = _Paths.STORE_TODAY_DEALS;
   static const STORE_FEATURED_PRODUCTS = _Paths.STORE_FEATURED_PRODUCTS;
   static const PREFERRED_STORES = _Paths.PREFERRED_STORES;
+  static const PREFERRED_STORE_CODE_LOOKUP = _Paths.PREFERRED_STORE_CODE_LOOKUP;
   static const STORE_PROFILE = _Paths.STORE_PROFILE;
   static const QR_SCAN = _Paths.QR_SCAN;
 }
@@ -96,6 +97,8 @@ abstract class _Paths {
   static const STORE_FEATURED_PRODUCTS =
       '/store/:store_slug/featured-products';
   static const PREFERRED_STORES = '/customer/preferred-stores';
+  static const PREFERRED_STORE_CODE_LOOKUP =
+      '/customer/preferred-stores/find-shop';
   static const STORE_PROFILE = '/store-profile';
   static const QR_SCAN = '/qr-scan';
 }

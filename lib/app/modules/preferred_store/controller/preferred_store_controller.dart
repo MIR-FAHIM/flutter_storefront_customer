@@ -127,7 +127,10 @@ class PreferredStoreController extends GetxController {
   bool isActive(PreferredStoreItem item) =>
       item.status.trim().toLowerCase() == 'active';
 
-  Future<void> setActiveStore(PreferredStoreItem item) async {
+  Future<void> setActiveStore(
+    PreferredStoreItem item, {
+    bool goToStoreHome = false,
+  }) async {
     if (!_isLoggedIn) {
       Get.toNamed(Routes.LOGIN);
       return;
@@ -171,6 +174,9 @@ class PreferredStoreController extends GetxController {
                 'Active store changed successfully',
           ),
         );
+        if (goToStoreHome) {
+          Get.offAllNamed('/store/$slug');
+        }
         return;
       }
 

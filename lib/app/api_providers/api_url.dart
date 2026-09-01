@@ -78,6 +78,7 @@ class ApiClient {
   static const String createShop = '$baseUrl/api/shops/create';
   static const String listShops = '$baseUrl/api/shops/list';
   static const String shopDetails = '$baseUrl/api/shops/details/'; // {id}
+  static const String findShopByCode = '$baseUrl/api/shops/find-by-code/'; // {code}
   static const String shopProducts = '$baseUrl/api/shops/products/'; // {id}
   static const String updateShop = '$baseUrl/api/shops/update/'; // {id}
   static const String updateShopStatus = '$baseUrl/api/shops/status/'; // {id}

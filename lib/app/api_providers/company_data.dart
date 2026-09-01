@@ -17,7 +17,7 @@ class CompanyData {
   static const String image_file_url = "https://myzooapi.myzoo.asia/storage/app/public/";
   static const String appname = "MyZoo";
   static const String siteName = "MyZoo";
-  static const String version = "4.6.6+86";
+  static const String version = "1";
   static const String companyID = "2";
   static const String companyLogo = "assets/logo/myzoo_logo.png";
   static const String packageName = "com.myzoo.customer";
