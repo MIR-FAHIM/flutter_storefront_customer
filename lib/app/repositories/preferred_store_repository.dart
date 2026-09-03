@@ -32,6 +32,16 @@ class PreferredStoreRepository {
     return response;
   }
 
+  Future<dynamic> getShopDetails({required int shopId}) async {
+    final manager = APIManager();
+    final response = await manager.getWithHeader(
+      '${ApiClient.shopDetails}$shopId',
+      header,
+    );
+    print('getShopDetails 544: $response');
+    return response;
+  }
+
   Future<dynamic> findShopByCode({required String code}) async {
     final manager = APIManager();
     final response = await manager.get('${ApiClient.findShopByCode}$code');

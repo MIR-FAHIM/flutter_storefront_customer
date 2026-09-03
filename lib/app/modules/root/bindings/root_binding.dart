@@ -4,6 +4,7 @@ import 'package:ecom_user_flutter/app/modules/category/controller/category_contr
 import 'package:ecom_user_flutter/app/modules/order/controller/order_controller.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_controller.dart';
 import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
+import 'package:ecom_user_flutter/app/modules/notification/controller/notification_controller.dart';
 import 'package:get/get.dart';
 import 'package:ecom_user_flutter/app/modules/home/controllers/home_controller.dart';
 
@@ -16,7 +17,7 @@ class RootBinding extends Bindings {
       () => RootController(),
     );
     Get.lazyPut<CategoryController>(
-          () => CategoryController(),
+      () => CategoryController(),
     );
     Get.lazyPut<HomeController>(
       () => HomeController(),
@@ -27,6 +28,10 @@ class RootBinding extends Bindings {
     );
     Get.lazyPut<BannerController>(
       () => BannerController(),
+    );
+    Get.lazyPut<NotificationController>(
+      () => NotificationController(),
+      fenix: true,
     );
 
     Get.lazyPut<CartController>(

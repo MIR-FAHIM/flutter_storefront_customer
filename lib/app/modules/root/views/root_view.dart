@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 
 import 'package:ecom_user_flutter/app/modules/global_widgets/main_drawer_widget.dart';
 import 'package:ecom_user_flutter/app/modules/home/controllers/home_controller.dart';
+import 'package:ecom_user_flutter/app/modules/notification/controller/notification_controller.dart';
+import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import '../controllers/root_controller.dart';
 
 class RootView extends GetView<RootController> {
@@ -37,7 +39,6 @@ class RootView extends GetView<RootController> {
         },
         child: Scaffold(
           body: controller.currentPage,
-
           bottomNavigationBar: Obx(() {
             return SafeArea(
               top: false,
@@ -76,20 +77,24 @@ class RootView extends GetView<RootController> {
                       onTap: () {
                         controller.currentIndex.value = 1;
                         if (!Get.isRegistered<DeliveryController>()) {
-                          Get.lazyPut<DeliveryController>(() => DeliveryController());
+                          Get.lazyPut<DeliveryController>(
+                              () => DeliveryController());
                         }
                       },
                     ),
                     _SmartBottomBarItem(
                       icon: 'assets/icons/cart.png',
                       label: 'Cart',
-                      count: Get.find<CartController>().cart.value?.totalItems ?? 0,
+                      count:
+                          Get.find<CartController>().cart.value?.totalItems ??
+                              0,
                       isCart: true,
                       isSelected: controller.currentIndex.value == 2,
                       onTap: () {
                         controller.currentIndex.value = 2;
                         if (!Get.isRegistered<DeliveryController>()) {
-                          Get.lazyPut<DeliveryController>(() => DeliveryController());
+                          Get.lazyPut<DeliveryController>(
+                              () => DeliveryController());
                         }
                       },
                     ),
@@ -109,6 +114,17 @@ class RootView extends GetView<RootController> {
                             .getPreferredStores(reset: true);
                       },
                     ),
+                    Obx(() {
+                      final count =
+                          Get.find<NotificationController>().unreadCount.value;
+                      return _SmartBottomBarItem(
+                        iconData: Icons.notifications_none_rounded,
+                        label: 'Alerts',
+                        count: count,
+                        onTap: () => Get.toNamed(Routes.NOTIFICATIONVIEW),
+                        isSelected: false,
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -183,7 +199,6 @@ class _SmartBottomBarItem extends StatelessWidget {
                             color: activeColor,
                           ),
                   ),
-
                   if (isCart && count > 0)
                     Positioned(
                       right: -10,

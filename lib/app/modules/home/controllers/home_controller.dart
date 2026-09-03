@@ -3,6 +3,8 @@ import 'package:ecom_user_flutter/app/models/ecom/profile_model.dart';
 
 import 'package:ecom_user_flutter/app/repositories/auth_repositories.dart';
 import 'package:ecom_user_flutter/app/repositories/delivery_rep.dart';
+import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
+import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:get/get.dart';
@@ -28,6 +30,7 @@ class HomeController extends GetxController {
 
   final packageLoad = false.obs;
   final hideChatBox = false.obs;
+  final unreadChatCount = 0.obs;
 
   final userID = 0.obs;
   final deliveryReport = DeliveryReportModel().obs;
@@ -37,18 +40,41 @@ class HomeController extends GetxController {
 
   @override
   Future<void> onInit() async {
-
-    if(Get.find<AuthService>().currentUser.value.data != null){
+    if (Get.find<AuthService>().currentUser.value.data != null) {
       userID.value = Get.find<AuthService>().currentUser.value.data!.user!.id!;
       getProfile();
+      getUnreadChatCount();
     }
-
 
     super.onInit();
     print('HomeController.onInit');
   }
 
-  Future refreshHome() async {}
+  Future<void> refreshHome() async {
+    await Future.wait([
+      getUnreadChatCount(),
+      Get.find<BannerController>().getBanners(),
+      Get.find<BannerController>().getShopDetails(),
+      Get.find<ProductController>().reloadStorefrontData(),
+    ]);
+  }
+
+  Future<void> getUnreadChatCount() async {
+    final response = await AuthRepository().getChatUnreadCount();
+
+    print("i am here 543");
+    if (response is Map && response['status'] == 'success') {
+
+      final data = response['data'];
+      if (data is Map) {
+
+        unreadChatCount.value =
+            int.tryParse(data['total_unread_count'].toString()) ?? 0;
+        print("i am here 453  ${unreadChatCount.value}");
+
+      }
+    }
+  }
 
   @override
   void onReady() {

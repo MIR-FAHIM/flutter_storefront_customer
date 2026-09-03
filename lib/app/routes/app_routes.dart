@@ -12,6 +12,8 @@ abstract class Routes {
   static const FORGET_PASSWORD = _Paths.FORGET_PASSWORD;
 
   static const NOTIFICATIONVIEW = _Paths.NOTIFICATIONVIEW;
+  static const ORDER_NOTIFICATION = _Paths.ORDER_NOTIFICATION;
+  static const GENERAL_NOTIFICATION = _Paths.GENERAL_NOTIFICATION;
   static const ALL_DELIVERY_ORDER = _Paths.ALL_DELIVERY_ORDER;
   static const Completed_DELIVERY_ORDER = _Paths.Completed_DELIVERY_ORDER;
   static const Pending_DELIVERY_ORDER = _Paths.Pending_DELIVERY_ORDER;
@@ -47,7 +49,10 @@ abstract class Routes {
   static const PREFERRED_STORES = _Paths.PREFERRED_STORES;
   static const PREFERRED_STORE_CODE_LOOKUP = _Paths.PREFERRED_STORE_CODE_LOOKUP;
   static const STORE_PROFILE = _Paths.STORE_PROFILE;
+  static const PROFILE = _Paths.PROFILE;
   static const QR_SCAN = _Paths.QR_SCAN;
+  static const SHOP_CHAT_CONVERSATIONS = _Paths.SHOP_CHAT_CONVERSATIONS;
+  static const SHOP_CHAT_THREAD = _Paths.SHOP_CHAT_THREAD;
 }
 
 abstract class _Paths {
@@ -56,6 +61,7 @@ abstract class _Paths {
   static const ROOT = '/root';
 
   static const LOGIN = '/LOGIN';
+  static const PROFILE = '/PROFILE';
   static const SIGNUP = '/SIGNUP';
   static const FORGET_PASSWORD = '/FORGET_PASSWORD';
   static const SHOP_LIST = '/SHOP_LIST';
@@ -63,6 +69,8 @@ abstract class _Paths {
   static const SPLASHSCREEN = '/splashscreen';
 
   static const NOTIFICATIONVIEW = '/NOTIFICATIONVIEW';
+  static const ORDER_NOTIFICATION = '/notification/order';
+  static const GENERAL_NOTIFICATION = '/notification/general';
   static const ALL_DELIVERY_ORDER = '/ALL_DELIVERY_ORDER';
   static const Completed_DELIVERY_ORDER = '/Completed_DELIVERY_ORDER';
   static const Pending_DELIVERY_ORDER = '/Pending_DELIVERY_ORDER';
@@ -85,7 +93,8 @@ abstract class _Paths {
   static const ADD_ADDRESS = '/ADD_ADDRESS';
   static const STORE_HOME = '/store/:store_slug';
   static const STORE_PRODUCTS = '/store/:store_slug/products';
-  static const STORE_PRODUCT_DETAIL = '/store/:store_slug/products/:product_slug';
+  static const STORE_PRODUCT_DETAIL =
+      '/store/:store_slug/products/:product_slug';
   static const STORE_CATEGORY_PRODUCTS =
       '/store/:store_slug/category/:category_id';
   static const STORE_CART = '/store/:store_slug/cart';
@@ -94,11 +103,12 @@ abstract class _Paths {
   static const STORE_ORDER_DETAIL = '/store/:store_slug/order/:order_id';
   static const STORE_SEARCH = '/store/:store_slug/search';
   static const STORE_TODAY_DEALS = '/store/:store_slug/today-deals';
-  static const STORE_FEATURED_PRODUCTS =
-      '/store/:store_slug/featured-products';
+  static const STORE_FEATURED_PRODUCTS = '/store/:store_slug/featured-products';
   static const PREFERRED_STORES = '/customer/preferred-stores';
   static const PREFERRED_STORE_CODE_LOOKUP =
       '/customer/preferred-stores/find-shop';
   static const STORE_PROFILE = '/store-profile';
   static const QR_SCAN = '/qr-scan';
+  static const SHOP_CHAT_CONVERSATIONS = '/SHOP_CHAT_CONVERSATIONS';
+  static const SHOP_CHAT_THREAD = '/customer/chat/thread';
 }

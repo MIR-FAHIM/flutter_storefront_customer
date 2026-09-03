@@ -51,7 +51,7 @@ class StoreContextService extends GetxService {
 
     final storeChanged = activeStoreSlug.value != cleanSlug;
     activeStoreSlug.value = cleanSlug;
-    activeStoreId.value = id;
+    activeStoreId.value = id ?? (storeChanged ? null : activeStoreId.value);
     activeSellerId.value = sellerId ??
         (storeChanged ? null : activeSellerId.value);
     activeStoreName.value = name?.trim() ?? '';

@@ -1,6 +1,7 @@
 import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
 import 'package:ecom_user_flutter/app/models/ecom/banner_model.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
+import 'package:ecom_user_flutter/app/models/ecom/product/shop_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -12,9 +13,16 @@ class HomeBannerCarousel extends GetView<BannerController> {
     return Obx(() {
       final loading = controller.isLoading.value;
       final banners = controller.bannerData;
+      final shop = controller.shopDetails.value;
 
-      if (loading && banners.isEmpty) {
+
+
+      if (loading && banners.isEmpty && shop == null) {
         return const _SkeletonBanner();
+      }
+
+      if (shop != null) {
+        return _ShopHeader(shop: shop, fallbackBanners: banners);
       }
 
       if (banners.isEmpty) {
@@ -24,6 +32,94 @@ class HomeBannerCarousel extends GetView<BannerController> {
       return _ApiCarousel(banners: banners);
     });
   }
+}
+
+class _ShopHeader extends StatelessWidget {
+  const _ShopHeader({required this.shop, required this.fallbackBanners});
+
+  final Datum shop;
+  final List<BannerData> fallbackBanners;
+
+  @override
+  Widget build(BuildContext context) {
+    final bannerUrl = _mediaUrl(shop.banner);
+    final logoUrl = _mediaUrl(shop.logo);
+    final address = [shop.address, shop.area?.toString(), shop.district?.toString()]
+        .where((value) => value != null && value.trim().isNotEmpty)
+        .join(', ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        if (bannerUrl == null && fallbackBanners.isNotEmpty)
+          _ApiCarousel(banners: fallbackBanners),
+        if (bannerUrl != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: Image.network(
+                bannerUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const ColoredBox(
+                  color: Color(0xffeeeeee),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 29,
+                  backgroundImage: logoUrl == null ? null : NetworkImage(logoUrl),
+                  child: logoUrl == null
+                      ? const Icon(Icons.storefront_outlined)
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      (shop.shopName ?? shop.name ?? 'Preferred Shop').trim(),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    if (address.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(address, style: const TextStyle(color: Colors.black54)),
+                    ],
+                  ],
+                ),
+              )
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+String? _mediaUrl(MediaFile? media) {
+  if (media == null) return null;
+  final direct = media.url?.trim();
+  if (direct != null && direct.isNotEmpty) return direct;
+  final fileName = media.fileName?.trim();
+  if (fileName == null || fileName.isEmpty) return null;
+  final base = CompanyData.image_file_url.endsWith('/')
+      ? CompanyData.image_file_url.substring(0, CompanyData.image_file_url.length - 1)
+      : CompanyData.image_file_url;
+  return '$base/${fileName.startsWith('/') ? fileName.substring(1) : fileName}';
 }
 
 class _ApiCarousel extends StatefulWidget {
@@ -63,7 +159,10 @@ class _ApiCarouselState extends State<_ApiCarousel> {
             ),
           ),
         ),
+
+
         const SizedBox(height: 8),
+
         _Dots(count: count, index: _index),
       ],
     );
