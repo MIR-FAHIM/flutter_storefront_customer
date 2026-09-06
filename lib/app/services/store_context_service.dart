@@ -45,6 +45,7 @@ class StoreContextService extends GetxService {
     String? name,
     String? logo,
     String? banner,
+    String? averageRating,
   }) async {
     final cleanSlug = slug.trim();
     if (cleanSlug.isEmpty) return;

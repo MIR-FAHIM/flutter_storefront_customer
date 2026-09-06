@@ -169,6 +169,7 @@ class _ShopCard extends StatelessWidget {
                     width: double.infinity,
                     height: 30,
                     child: Obx(() {
+                      Get.put(ShopController());
                       final shopController = Get.find<ShopController>();
                       final isAdded = shopController.isStorePreferred(item);
                       final isLoading = shopController.isAddingPreference.value;

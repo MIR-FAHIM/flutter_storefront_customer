@@ -20,11 +20,11 @@ class SplashscreenView extends GetView<SplashscreenController> {
 
             Center(
               child: Image(
-                color: AppColors.offerYellow,
+
                 height: 200,
                 width: 200,
                 image: AssetImage(
-                  'assets/logo/mz_full_logo.png',
+                  'assets/logo/myzoo_customer_logo.jpeg',
                 ),
               ),
             ),

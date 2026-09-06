@@ -1,6 +1,7 @@
 import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
 import 'package:ecom_user_flutter/app/models/ecom/banner_model.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
+import 'package:ecom_user_flutter/app/modules/review/view/shop_reviews_section.dart';
 import 'package:ecom_user_flutter/app/models/ecom/product/shop_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,8 +15,6 @@ class HomeBannerCarousel extends GetView<BannerController> {
       final loading = controller.isLoading.value;
       final banners = controller.bannerData;
       final shop = controller.shopDetails.value;
-
-
 
       if (loading && banners.isEmpty && shop == null) {
         return const _SkeletonBanner();
@@ -44,14 +43,19 @@ class _ShopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final bannerUrl = _mediaUrl(shop.banner);
     final logoUrl = _mediaUrl(shop.logo);
-    final address = [shop.address, shop.area?.toString(), shop.district?.toString()]
-        .where((value) => value != null && value.trim().isNotEmpty)
-        .join(', ');
+    final address = [
+      shop.address,
+      shop.area?.toString(),
+      shop.district?.toString()
+    ].where((value) => value != null && value.trim().isNotEmpty).join(', ');
+    final phone = shop.phone?.trim();
+    final rating = shop.averageReviewRating.toDouble().toStringAsFixed(1);
+    final totalReviews = shop.totalReviews;
+    final reviewLabel = totalReviews == 1 ? 'review' : 'reviews';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         if (bannerUrl == null && fallbackBanners.isNotEmpty)
           _ApiCarousel(banners: fallbackBanners),
         if (bannerUrl != null)
@@ -80,7 +84,8 @@ class _ShopHeader extends StatelessWidget {
                 backgroundColor: Colors.white,
                 child: CircleAvatar(
                   radius: 29,
-                  backgroundImage: logoUrl == null ? null : NetworkImage(logoUrl),
+                  backgroundImage:
+                      logoUrl == null ? null : NetworkImage(logoUrl),
                   child: logoUrl == null
                       ? const Icon(Icons.storefront_outlined)
                       : null,
@@ -93,18 +98,49 @@ class _ShopHeader extends StatelessWidget {
                   children: [
                     Text(
                       (shop.shopName ?? shop.name ?? 'Preferred Shop').trim(),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w700),
                     ),
                     if (address.isNotEmpty) ...[
                       const SizedBox(height: 3),
-                      Text(address, style: const TextStyle(color: Colors.black54)),
+                      Text(address,
+                          style: const TextStyle(color: Colors.black54)),
+                    ],
+                    if (phone != null && phone.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text('Mobile: $phone',
+                          style: const TextStyle(color: Colors.black54)),
                     ],
                   ],
                 ),
-              )
-              ],
+              ),
+            ],
+          ),
+        ),
+        if (shop.id != null) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Get.to(
+                () => ShopReviewsScreen(
+                  shopId: shop.id!,
+                  shopName: shop.shopName ?? shop.name,
+                ),
+              ),
+              icon: const Icon(Icons.rate_review_outlined),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.star_rounded,
+                      size: 18, color: Colors.amber.shade700),
+                  const SizedBox(width: 4),
+                  Text('$rating ($totalReviews $reviewLabel)'),
+                ],
+              ),
             ),
           ),
+        ],
       ],
     );
   }
@@ -117,7 +153,8 @@ String? _mediaUrl(MediaFile? media) {
   final fileName = media.fileName?.trim();
   if (fileName == null || fileName.isEmpty) return null;
   final base = CompanyData.image_file_url.endsWith('/')
-      ? CompanyData.image_file_url.substring(0, CompanyData.image_file_url.length - 1)
+      ? CompanyData.image_file_url
+          .substring(0, CompanyData.image_file_url.length - 1)
       : CompanyData.image_file_url;
   return '$base/${fileName.startsWith('/') ? fileName.substring(1) : fileName}';
 }
@@ -159,10 +196,7 @@ class _ApiCarouselState extends State<_ApiCarousel> {
             ),
           ),
         ),
-
-
         const SizedBox(height: 8),
-
         _Dots(count: count, index: _index),
       ],
     );
@@ -195,7 +229,8 @@ class _BannerImage extends StatelessWidget {
       errorBuilder: (_, __, ___) => Container(
         color: Colors.grey.shade100,
         child: const Center(
-          child: Icon(Icons.broken_image_outlined, size: 42, color: Colors.black54),
+          child: Icon(Icons.broken_image_outlined,
+              size: 42, color: Colors.black54),
         ),
       ),
       loadingBuilder: (_, child, progress) {
@@ -203,7 +238,8 @@ class _BannerImage extends StatelessWidget {
         return Container(
           color: Colors.grey.shade100,
           child: const Center(
-            child: SizedBox(height: 22, width: 22, child: CircularProgressIndicator()),
+            child: SizedBox(
+                height: 22, width: 22, child: CircularProgressIndicator()),
           ),
         );
       },
