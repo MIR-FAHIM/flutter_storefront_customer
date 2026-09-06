@@ -71,16 +71,16 @@ initServices() async {
     }
   });
   // await initPusher();
-  // await Permission.notification.status.then((value) {
-  //   //ios  Permission.accessNotificationPolicy;
-  //   if (value.isGranted) {
-  //     print("hlw fahim 111 _______________________ notification request ");
-  //   } else {
-  //     print("hlw fahim 222_______________________ notification request ");
-  //
-  //     Permission.notification.request();
-  //   }
-  // });
+  await Permission.notification.status.then((value) {
+    //ios  Permission.accessNotificationPolicy;
+    if (value.isGranted) {
+      print("hlw fahim 111 _______________________ notification request ");
+    } else {
+      print("hlw fahim 222_______________________ notification request ");
+
+      Permission.notification.request();
+    }
+  });
 
   ///remove
   // await flutterLocalNotificationsPlugin

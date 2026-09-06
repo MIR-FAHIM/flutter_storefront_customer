@@ -14,6 +14,14 @@ class ApiClient {
   static const String revokeToken = '$baseUrl/api/auth/tokens/'; // {id}
 
   // ==============================
+  // CHAT
+  // ==============================
+  static const String chatUnreadCount = '$baseUrl/api/chat/unread-count';
+  static const String chatConversations = '$baseUrl/api/chat/conversations';
+  static const String chatMessages = '$baseUrl/api/chat/messages';
+  static const String chatConversationsRead = '$baseUrl/api/chat/conversations';
+
+  // ==============================
   // USERS
   // ==============================
   static const String createUser = '$baseUrl/api/users/create';
@@ -78,7 +86,8 @@ class ApiClient {
   static const String createShop = '$baseUrl/api/shops/create';
   static const String listShops = '$baseUrl/api/shops/list';
   static const String shopDetails = '$baseUrl/api/shops/details/'; // {id}
-  static const String findShopByCode = '$baseUrl/api/shops/find-by-code/'; // {code}
+  static const String findShopByCode =
+      '$baseUrl/api/shops/find-by-code/'; // {code}
   static const String shopProducts = '$baseUrl/api/shops/products/'; // {id}
   static const String updateShop = '$baseUrl/api/shops/update/'; // {id}
   static const String updateShopStatus = '$baseUrl/api/shops/status/'; // {id}
@@ -91,6 +100,15 @@ class ApiClient {
       '$baseUrl/api/customer-preferences-store/set-active';
   static const String removeSellerPreference =
       '$baseUrl/api/customer-preferences-store/remove';
+
+  // Notifications
+  static const String notifications = '$baseUrl/api/notifications';
+  static const String notificationUnreadCount =
+      '$baseUrl/api/notifications/unread-count';
+  static const String notificationOrders = '$baseUrl/api/notifications/orders/';
+  static const String notificationRead = '$baseUrl/api/notifications/';
+  static const String notificationReadAll =
+      '$baseUrl/api/notifications/read-all';
 
   // ==============================
   // CART

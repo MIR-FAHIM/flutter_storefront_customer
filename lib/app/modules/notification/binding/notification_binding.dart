@@ -1,14 +1,9 @@
-import 'package:get/get.dart';
-import 'package:flutter/material.dart';
-import '../controllers/home_controller.dart';
 import 'package:ecom_user_flutter/app/modules/notification/controller/notification_controller.dart';
+import 'package:get/get.dart';
 
-class HomeBinding extends Bindings {
+class NotificationBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<HomeController>(
-      () => HomeController(),
-    );
     Get.lazyPut<NotificationController>(
       () => NotificationController(),
       fenix: true,

@@ -18,6 +18,7 @@ import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_all_pro
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_fasion_product.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_restaurant_products.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/medicine_home.dart';
+import 'package:ecom_user_flutter/app/modules/notification/controller/notification_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
 import 'package:ecom_user_flutter/app/services/store_context_service.dart';
@@ -90,182 +91,203 @@ class HomeView extends GetView<HomeController> {
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
         body: SafeArea(
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: _PdfStyleHomeHeader(
-                  onSearchTap: () {
-                    final slug = Get.find<StoreContextService>().storeSlugOrNull;
-                    Get.toNamed(
-                      slug == null ? Routes.PRODUCT_FILTER : '/store/$slug/search',
-                    );
-                  },
-                  onMessengerTap: () {},
-                  onScanTap: () {
-                    Get.toNamed(Routes.QR_SCAN);
-                  },
-                  onNotificationTap: () {
-                    // Get.toNamed(Routes.NOTIFICATIONVIEW);
-                  },
-                  onWishlistTap: () {},
-                ),
+          child: RefreshIndicator(
+            onRefresh: controller.refreshHome,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
-
-              Obx(() {
-                if (Get.find<StoreContextService>().hasActiveStore) {
-                  return const SliverToBoxAdapter(
-                    child: SizedBox.shrink(),
-                  );
-                }
-                return SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
-                    child: _ChooseStorePrompt(
-                      onPressed: () => Get.toNamed(Routes.SHOP_LIST),
+              slivers: [
+                Obx(() {
+                  return SliverToBoxAdapter(
+                    child: _PdfStyleHomeHeader(
+                      onProfileTap: () {
+                        Get.toNamed(Routes.PROFILE)?.then((_) {
+                          controller.getUnreadChatCount();
+                        });
+                      },
+                      onSearchTap: () {
+                        final slug =
+                            Get.find<StoreContextService>().storeSlugOrNull;
+                        Get.toNamed(
+                          slug == null
+                              ? Routes.PRODUCT_FILTER
+                              : '/store/$slug/search',
+                        );
+                      },
+                      onMessengerTap: () {
+                        Get.toNamed(Routes.SHOP_CHAT_CONVERSATIONS)?.then((_) {
+                          controller.getUnreadChatCount();
+                        });
+                      },
+                      chatBadgeCount: controller.unreadChatCount.value,
+                      onScanTap: () {
+                        Get.toNamed(Routes.QR_SCAN);
+                      },
+                      onNotificationTap: () {
+                        Get.toNamed(Routes.NOTIFICATIONVIEW);
+                      },
+                      onWishlistTap: () {},
                     ),
+                  );
+                }),
+
+                Obx(() {
+                  if (Get.find<StoreContextService>().hasActiveStore) {
+                    return const SliverToBoxAdapter(
+                      child: SizedBox.shrink(),
+                    );
+                  }
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: _pagePadding),
+                      child: _ChooseStorePrompt(
+                        onPressed: () => Get.toNamed(Routes.SHOP_LIST),
+                      ),
+                    ),
+                  );
+                }),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 12),
+                ),
+
+                // Main banner, same position as PDF
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _pagePadding),
+                    child: HomeBannerCarousel(),
                   ),
-                );
-              }),
-
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 12),
-              ),
-
-              // Main banner, same position as PDF
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: _pagePadding),
-                  child: HomeBannerCarousel(),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 12),
-              ),
-
-              // Today's Deal, All Brands, Top Seller, Flash Sale, New Arrivals, Free Delivery
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: _pagePadding),
-                  child: HomeQuickActionsRow(),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 12),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 12),
-              ),
-
-              // Client ad / promo strip
-              const SliverToBoxAdapter(
-                child: HomePromoStrip(),
-              ),
-
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
-
-              // Featured category section
-              SliverToBoxAdapter(
-                child: HomeSectionHeader(
-                  title: "Featured Category",
-                  actionText: "See All",
-                  onTap: () {
-                    // Get.toNamed(Routes.CATEGORY_VIEW);
-                  },
+                // Today's Deal, All Brands, Top Seller, Flash Sale, New Arrivals, Free Delivery
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _pagePadding),
+                    child: HomeQuickActionsRow(),
+                  ),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 10),
-              ),
-
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: _pagePadding),
-                  child: HomeCategoryRow(),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 12),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
-
-              // Featured Product section, PDF uses #00509D with low opacity
-              SliverToBoxAdapter(
-                child: _PdfSectionBlock(
-                  backgroundColor: AppColors.primaryColor.withOpacity(0.32),
-                  padding: const EdgeInsets.fromLTRB(0, 10, 0, 12),
-                  child: const HomeFeaturedProductsSection(),
+                // Client ad / promo strip
+                const SliverToBoxAdapter(
+                  child: HomePromoStrip(),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
-
-              // Medicine or Grocery style product section
-              SliverToBoxAdapter(
-                child: _PdfSectionBlock(
-                  backgroundColor: AppColors.backgroundColor,
-                  child: HomeGrocerySection(),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
                 ),
-              ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
 
-              SliverToBoxAdapter(
-                child: _PdfSectionBlock(
-                  backgroundColor: AppColors.backgroundColor,
-                  child: HomeMedicineSection(),
+                // Featured category section
+                SliverToBoxAdapter(
+                  child: HomeSectionHeader(
+                    title: "Featured Category",
+                    actionText: "See All",
+                    onTap: () {
+                      // Get.toNamed(Routes.CATEGORY_VIEW);
+                    },
+                  ),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
-
-              // Fashion section, PDF uses #A59E83 around 60% opacity
-              SliverToBoxAdapter(
-                child: HomeCategoryChildRow(
-                  title: "Fashion",
-                  backgroundColor: AppColors.fashionColor.withOpacity(0.60),
-                  onSeeAllTap: () {
-                    Get.find<ProductController>().openCategoryWiseProducts(5);
-                  },
-                  onItemTap: (item) {
-                    Get.find<ProductController>()
-                        .openCategoryWiseProducts(item.id);
-                  },
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 10),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
-
-              // Baby care section
-              SliverToBoxAdapter(
-                child: _PdfSectionBlock(
-                  backgroundColor: AppColors.backgroundColor,
-                  child: HomeBabyCareSection(),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _pagePadding),
+                    child: HomeCategoryRow(),
+                  ),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 14),
-              ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
+                ),
 
-              // Additional product section placeholder using your existing restaurant widget
-              SliverToBoxAdapter(
-                child: HomeAllProductsSection(),
-              ),
+                // Featured Product section, PDF uses #00509D with low opacity
+                SliverToBoxAdapter(
+                  child: _PdfSectionBlock(
+                    backgroundColor: AppColors.primaryColor.withOpacity(0.32),
+                    padding: const EdgeInsets.fromLTRB(0, 10, 0, 12),
+                    child: const HomeFeaturedProductsSection(),
+                  ),
+                ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 22),
-              ),
-            ],
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
+                ),
+
+                // Medicine or Grocery style product section
+                SliverToBoxAdapter(
+                  child: _PdfSectionBlock(
+                    backgroundColor: AppColors.backgroundColor,
+                    child: HomeGrocerySection(),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
+                ),
+
+                SliverToBoxAdapter(
+                  child: _PdfSectionBlock(
+                    backgroundColor: AppColors.backgroundColor,
+                    child: HomeMedicineSection(),
+                  ),
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
+                ),
+
+                // Fashion section, PDF uses #A59E83 around 60% opacity
+                SliverToBoxAdapter(
+                  child: HomeCategoryChildRow(
+                    title: "Fashion",
+                    backgroundColor: AppColors.fashionColor.withOpacity(0.60),
+                    onSeeAllTap: () {
+                      Get.find<ProductController>().openCategoryWiseProducts(5);
+                    },
+                    onItemTap: (item) {
+                      Get.find<ProductController>()
+                          .openCategoryWiseProducts(item.id);
+                    },
+                  ),
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
+                ),
+
+                // Baby care section
+                SliverToBoxAdapter(
+                  child: _PdfSectionBlock(
+                    backgroundColor: AppColors.backgroundColor,
+                    child: HomeBabyCareSection(),
+                  ),
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 14),
+                ),
+
+                // Additional product section placeholder using your existing restaurant widget
+                SliverToBoxAdapter(
+                  child: HomeAllProductsSection(),
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 22),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -280,13 +302,17 @@ class _PdfStyleHomeHeader extends StatelessWidget {
     required this.onNotificationTap,
     required this.onWishlistTap,
     required this.onScanTap,
+    required this.onProfileTap,
+    required this.chatBadgeCount,
   });
 
   final VoidCallback onSearchTap;
   final VoidCallback onMessengerTap;
+  final VoidCallback onProfileTap;
   final VoidCallback onNotificationTap;
   final VoidCallback onWishlistTap;
   final VoidCallback onScanTap;
+  final int chatBadgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -310,72 +336,18 @@ class _PdfStyleHomeHeader extends StatelessWidget {
       child: Column(
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Obx(() {
-                final logo = storeContext.activeStoreLogo.value;
-                return CircleAvatar(
-                  radius: 23,
-                  backgroundColor: Colors.white.withOpacity(0.18),
-                  backgroundImage:
-                      logo.isEmpty ? null : NetworkImage(_asHeaderImageUrl(logo)),
-                  child: logo.isEmpty
-                      ? Icon(
-                          storeContext.hasActiveStore
-                              ? Icons.storefront_rounded
-                              : Icons.person_outline_rounded,
-                          color: AppColors.textWhite,
-                          size: 28,
-                        )
-                      : null,
-                );
-              }),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Obx(() {
-                      return Text(
-                        storeContext.hasActiveStore
-                            ? "Shopping From"
-                            : "Welcome Back",
-                        style: TextStyle(
-                          color: AppColors.textWhite,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 2),
-                    Obx(() {
-                      final storeName = storeContext.activeStoreName.value;
-                      final user = Get.find<AuthService>()
-                          .currentUser
-                          .value
-                          .data
-                          ?.user
-                          ?.name;
-                      return Text(
-                        storeContext.hasActiveStore
-                            ? (storeName.isEmpty
-                                ? storeContext.activeStoreSlug.value
-                                : storeName)
-                            : (user ?? "Customer"),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textWhite,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+              _HeaderCircleIcon(
+                icon: Icons.supervised_user_circle_outlined,
+                label: "profile",
+                onTap: onProfileTap,
               ),
+              const SizedBox(width: 8),
               _HeaderCircleIcon(
                 icon: Icons.messenger_outline_rounded,
                 label: "messenger",
+                badgeCount: chatBadgeCount,
                 onTap: onMessengerTap,
               ),
               const SizedBox(width: 8),
@@ -385,11 +357,14 @@ class _PdfStyleHomeHeader extends StatelessWidget {
                 onTap: onScanTap,
               ),
               const SizedBox(width: 8),
-              _HeaderCircleIcon(
-                icon: Icons.notifications_none_rounded,
-                label: "notification",
-                badgeCount: 2,
-                onTap: onNotificationTap,
+              Obx(
+                () => _HeaderCircleIcon(
+                  icon: Icons.notifications_none_rounded,
+                  label: "notification",
+                  badgeCount:
+                      Get.find<NotificationController>().unreadCount.value,
+                  onTap: onNotificationTap,
+                ),
               ),
               const SizedBox(width: 8),
               _HeaderCircleIcon(

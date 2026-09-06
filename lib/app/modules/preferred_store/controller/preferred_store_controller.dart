@@ -165,6 +165,7 @@ class PreferredStoreController extends GetxController {
           logo: item.logoUrl,
           banner: item.bannerUrl,
         );
+        print('selected shop id: ${item.shop?.id}');
 
         await getPreferredStores(reset: true);
         Get.showSnackbar(

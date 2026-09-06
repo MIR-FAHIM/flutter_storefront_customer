@@ -8,6 +8,9 @@ import 'package:ecom_user_flutter/app/modules/cart/view/widgets/success_page.dar
 import 'package:ecom_user_flutter/app/modules/cart/view/widgets/user_address.dart';
 import 'package:ecom_user_flutter/app/modules/category/binding/category_binding.dart';
 import 'package:ecom_user_flutter/app/modules/category/view/all_category_view.dart';
+import 'package:ecom_user_flutter/app/modules/customer_chat/bindings/customer_chat_binding.dart';
+import 'package:ecom_user_flutter/app/modules/customer_chat/views/customer_chat_thread_view.dart';
+import 'package:ecom_user_flutter/app/modules/customer_chat/views/customer_conversation_list_view.dart';
 import 'package:ecom_user_flutter/app/modules/delivery/binding/delivery_binding.dart';
 import 'package:ecom_user_flutter/app/modules/delivery/view/assigned_delivery_view.dart';
 import 'package:ecom_user_flutter/app/modules/delivery/view/completed_delivery_view.dart';
@@ -15,6 +18,7 @@ import 'package:ecom_user_flutter/app/modules/delivery/view/deliveredOrder.dart'
 import 'package:ecom_user_flutter/app/modules/delivery/view/my_delivery_tab.dart';
 
 import 'package:ecom_user_flutter/app/modules/delivery/view/pending_delivery_view.dart';
+import 'package:ecom_user_flutter/app/modules/home/views/profile_view.dart';
 import 'package:ecom_user_flutter/app/modules/order/binding/order_binding.dart';
 import 'package:ecom_user_flutter/app/modules/order/view/order_details.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/binding/preferred_store_binding.dart';
@@ -36,6 +40,9 @@ import 'package:ecom_user_flutter/app/modules/wishlist/binding/wishlist_binding.
 import 'package:ecom_user_flutter/app/modules/wishlist/view/wish_list_view.dart';
 import 'package:ecom_user_flutter/app/modules/qr_scan/bindings/qr_scan_binding.dart';
 import 'package:ecom_user_flutter/app/modules/qr_scan/views/qr_scan_view.dart';
+import 'package:ecom_user_flutter/app/modules/notification/binding/notification_binding.dart';
+import 'package:ecom_user_flutter/app/modules/notification/view/notification_center_view.dart';
+import 'package:ecom_user_flutter/app/modules/notification/view/notification_detail_views.dart';
 import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 
 import 'package:get/get.dart';
@@ -219,6 +226,27 @@ class AppPages {
       page: () => const StoreProfileView(),
       binding: PreferredStoreBinding(),
     ),
+
+    GetPage(
+      name: _Paths.PROFILE,
+      page: () => const ProfileView(),
+      binding: HomeBinding(),
+    ),
+    GetPage(
+      name: _Paths.NOTIFICATIONVIEW,
+      page: () => const NotificationCenterView(),
+      binding: NotificationBinding(),
+    ),
+    GetPage(
+      name: _Paths.ORDER_NOTIFICATION,
+      page: () => const OrderNotificationView(),
+      binding: NotificationBinding(),
+    ),
+    GetPage(
+      name: _Paths.GENERAL_NOTIFICATION,
+      page: () => const GeneralNotificationView(),
+      binding: NotificationBinding(),
+    ),
     GetPage(
       name: _Paths.STORE_HOME,
       page: () {
@@ -311,6 +339,16 @@ class AppPages {
       name: _Paths.QR_SCAN,
       page: () => QrScanView(),
       binding: QrScanBinding(),
+    ),
+    GetPage(
+      name: _Paths.SHOP_CHAT_CONVERSATIONS,
+      page: () => const CustomerConversationListView(),
+      binding: CustomerChatBinding(),
+    ),
+    GetPage(
+      name: _Paths.SHOP_CHAT_THREAD,
+      page: () => const CustomerChatThreadView(),
+      binding: CustomerChatBinding(),
     ),
   ];
 }
