@@ -241,7 +241,6 @@ class ProductController extends GetxController {
   void onClose() {
     _storeSlugWorker?.dispose();
     _debounce?.cancel();
-    searchCtrl.value.dispose();
     super.onClose();
   }
 

@@ -100,6 +100,8 @@ class PreferredStoreItem {
   String get phoneText => shop?.phone ?? '-';
   String get addressText => shop?.address ?? '-';
   String get districtText => shop?.district ?? '-';
+  num get averageReviewRating => shop?.rating?.averageReviewRating ?? 0;
+  int get totalReviews => shop?.rating?.totalReviews ?? 0;
 }
 
 class PreferredSeller {
@@ -145,6 +147,7 @@ class PreferredStoreShop {
   final String? phone;
   final String? address;
   final String? district;
+  final PreferredStoreRating? rating;
 
   const PreferredStoreShop({
     this.id,
@@ -156,9 +159,11 @@ class PreferredStoreShop {
     this.phone,
     this.address,
     this.district,
+    this.rating,
   });
 
   factory PreferredStoreShop.fromJson(Map<String, dynamic> json) {
+    final rating = _map(json['rating']);
     return PreferredStoreShop(
       id: _nullableInt(json['id']),
       name: _nullableString(json['name']),
@@ -169,6 +174,24 @@ class PreferredStoreShop {
       phone: _nullableString(json['phone']),
       address: _nullableString(json['address']),
       district: _nullableString(json['district']),
+      rating: rating == null ? null : PreferredStoreRating.fromJson(rating),
+    );
+  }
+}
+
+class PreferredStoreRating {
+  final num averageReviewRating;
+  final int totalReviews;
+
+  const PreferredStoreRating({
+    required this.averageReviewRating,
+    required this.totalReviews,
+  });
+
+  factory PreferredStoreRating.fromJson(Map<String, dynamic> json) {
+    return PreferredStoreRating(
+      averageReviewRating: _nullableNum(json['average_review_rating']) ?? 0,
+      totalReviews: _nullableInt(json['total_reviews']) ?? 0,
     );
   }
 }
@@ -209,6 +232,11 @@ int? _nullableInt(dynamic value) {
   if (value is int) return value;
   if (value is double) return value.toInt();
   return value == null ? null : int.tryParse(value.toString());
+}
+
+num? _nullableNum(dynamic value) {
+  if (value is num) return value;
+  return value == null ? null : num.tryParse(value.toString());
 }
 
 DateTime? _date(dynamic value) =>

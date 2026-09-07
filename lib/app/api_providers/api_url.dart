@@ -169,6 +169,7 @@ class ApiClient {
   // REVIEWS
   // ==============================
   static const String addReview = '$baseUrl/api/reviews/add';
+    static const String reviewsByShop = '$baseUrl/api/reviews/shop/'; // {shopId}
   static const String allReviews = '$baseUrl/api/reviews/list';
   static const String productReviews =
       '$baseUrl/api/reviews/product/'; // {productId}

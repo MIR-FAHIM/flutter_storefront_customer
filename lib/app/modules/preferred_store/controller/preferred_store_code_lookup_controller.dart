@@ -107,6 +107,7 @@ class PreferredStoreCodeLookupController extends GetxController {
           name: shop.displayName,
           logo: shop.logoUrl,
           banner: shop.bannerUrl,
+
         );
 
         if (Get.isRegistered<PreferredStoreController>()) {
