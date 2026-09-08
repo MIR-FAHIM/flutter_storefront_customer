@@ -19,6 +19,7 @@ import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_fasion_
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_restaurant_products.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/medicine_home.dart';
 import 'package:ecom_user_flutter/app/modules/notification/controller/notification_controller.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
 import 'package:ecom_user_flutter/app/services/store_context_service.dart';
@@ -31,6 +32,16 @@ class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
   static const double _pagePadding = 14;
+
+  PreferredStoreController _preferredStoreController() {
+    if (!Get.isRegistered<PreferredStoreController>()) {
+      Get.lazyPut<PreferredStoreController>(
+        () => PreferredStoreController(),
+        fenix: true,
+      );
+    }
+    return Get.find<PreferredStoreController>();
+  }
 
   Future<bool> _confirmExit(BuildContext context) async {
     final shouldExit = await showDialog<bool>(
@@ -132,8 +143,13 @@ class HomeView extends GetView<HomeController> {
                   );
                 }),
 
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 5),
+                ),
                 Obx(() {
-                  if (Get.find<StoreContextService>().hasActiveStore) {
+                  final preferredStoreController = _preferredStoreController();
+                  if (preferredStoreController.isLoading.value ||
+                      preferredStoreController.preferredStores.isNotEmpty) {
                     return const SliverToBoxAdapter(
                       child: SizedBox.shrink(),
                     );
@@ -142,9 +158,7 @@ class HomeView extends GetView<HomeController> {
                     child: Padding(
                       padding:
                           const EdgeInsets.symmetric(horizontal: _pagePadding),
-                      child: _ChooseStorePrompt(
-                        onPressed: () => Get.toNamed(Routes.SHOP_LIST),
-                      ),
+                      child: const _ChooseStorePrompt(),
                     ),
                   );
                 }),
@@ -173,14 +187,14 @@ class HomeView extends GetView<HomeController> {
                   ),
                 ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 12),
-                ),
-
-                // Client ad / promo strip
-                const SliverToBoxAdapter(
-                  child: HomePromoStrip(),
-                ),
+                // const SliverToBoxAdapter(
+                //   child: SizedBox(height: 12),
+                // ),
+                //
+                // // Client ad / promo strip
+                // const SliverToBoxAdapter(
+                //   child: HomePromoStrip(),
+                // ),
 
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 14),
@@ -470,35 +484,38 @@ class _HeaderCircleIcon extends StatelessWidget {
 }
 
 class _ChooseStorePrompt extends StatelessWidget {
-  const _ChooseStorePrompt({required this.onPressed});
-
-  final VoidCallback onPressed;
+  const _ChooseStorePrompt();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryColor.withOpacity(0.18)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.storefront_outlined, color: AppColors.primaryColor),
-          const SizedBox(width: 10),
-          const Expanded(
+    return InkWell(
+      onTap: (){
+        Get.toNamed(Routes.PREFERRED_STORES);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.redColor.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.storefront_outlined, color: AppColors.primaryColor),
+            const SizedBox(width: 10),
+            const Expanded(
             child: Text(
-              'Choose your preferred store',
+              'QR স্ক্যান অথবা দোকানের কোড নম্বর দিয়ে আপনার পছন্দের স্টোর যুক্ত করে নিন।',
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
-          ElevatedButton(
-            onPressed: onPressed,
-            child: const Text('Choose'),
+          IconButton.filled(
+            onPressed: () => Get.toNamed(Routes.PREFERRED_STORES),
+            icon: const Icon(Icons.arrow_forward_rounded),
           ),
         ],
       ),
+    ),
     );
   }
 }

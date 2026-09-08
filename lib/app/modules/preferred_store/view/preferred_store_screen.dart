@@ -387,7 +387,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'No preferred stores yet',
+              'এখনও কোনো পছন্দের স্টোর নেই',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textPrimary,
@@ -397,7 +397,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Stores you add from the home page will appear here.',
+              'আপনি দোকান মালিকের কাছ থেকে QR জেনে এখানে স্ক্যান করুন, দোকানটি আপনার পছন্দের তালিকায় যুক্ত হবে। অথবা দোকানের কোড নম্বর জেনে সার্চ করে যুক্ত করে নিন।',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textSecondary,
@@ -407,9 +407,15 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
+              onPressed: () => Get.toNamed(Routes.PREFERRED_STORE_CODE_LOOKUP),
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              label: const Text('QR স্ক্যান / কোড দিয়ে খুঁজুন'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
               onPressed: () => Get.toNamed(Routes.SHOP_LIST),
-              icon: const Icon(Icons.search_rounded),
-              label: const Text('Browse Stores'),
+              icon: const Icon(Icons.storefront_rounded),
+              label: const Text('অথবা স্টোর লিস্ট ব্রাউজ করুন'),
             ),
           ],
         ),

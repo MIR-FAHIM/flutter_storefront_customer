@@ -37,7 +37,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
         return;
       }
 
-      controller.getOrderDetails(orderId);
+      controller.getOrderDetails(orderId, navigate: false);
     });
   }
 
@@ -89,7 +89,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
               onRetry: () {
                 final orderId = _readOrderId(Get.arguments);
                 if (orderId != null) {
-                  controller.getOrderDetails(orderId);
+                  controller.getOrderDetails(orderId, navigate: false);
                 }
               },
             );
@@ -104,7 +104,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
           return RefreshIndicator(
             color: _primary,
             onRefresh: () async {
-              await controller.getOrderDetails(order.id);
+              await controller.getOrderDetails(order.id, navigate: false);
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(

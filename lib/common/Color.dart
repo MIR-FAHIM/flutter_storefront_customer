@@ -5,7 +5,7 @@ class AppColors {
   // Brand Core Colors from PDF Theme
   // ---------------------------------------------------------------------------
 
-  static final primaryColor = HexColor("#00509D");
+  static final primaryColor = HexColor("#00007c");
   static final primaryDarkColor = HexColor("#151738");
   static final primaryNavyColor = HexColor("#2B2C6C");
   static final primaryLightColor = HexColor("#BDEFEE");
@@ -15,6 +15,7 @@ class AppColors {
   // ---------------------------------------------------------------------------
 
   static final backgroundColor = HexColor("#FFFFFF");
+  static final backgroundBlueColor = HexColor("#00007c");
   static final scaffoldBackground = HexColor("#F5F7FB");
   static final secondbackgroundColor = HexColor("#EEF4FA");
   static final thirdbackgroundColor = HexColor("#EAF2FA");

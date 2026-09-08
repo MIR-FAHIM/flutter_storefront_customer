@@ -282,16 +282,52 @@ class OrderMessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = order.orderNumber?.trim().isNotEmpty == true
+        ? order.orderNumber!.trim()
+        : 'Order #${order.id ?? ''}'.trim();
+    final details = [order.status, order.total]
+        .where((item) => item != null && item!.trim().isNotEmpty)
+        .map((item) => item!.trim())
+        .join(' - ');
+
     return InkWell(
+      borderRadius: BorderRadius.circular(6),
       onTap: order.id == null
           ? null
           : () => Get.toNamed(Routes.ORDER_DETAIL, arguments: order.id),
-      child: _RichCardShell(
-        icon: Icons.receipt_long_outlined,
-        title: order.orderNumber ?? 'Order #${order.id ?? ''}',
-        subtitle: [order.status, order.total]
-            .where((item) => item != null && item!.trim().isNotEmpty)
-            .join(' - '),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Text.rich(
+          TextSpan(
+            children: [
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  size: 17,
+                  color: AppColors.primaryColor,
+                ),
+              ),
+              const TextSpan(text: '  '),
+              TextSpan(
+                text: title,
+                style: TextStyle(
+                  color: AppColors.primaryColor,
+                  fontWeight: FontWeight.w800,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              if (details.isNotEmpty)
+                TextSpan(
+                  text: '  $details',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
