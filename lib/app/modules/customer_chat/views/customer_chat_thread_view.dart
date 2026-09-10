@@ -93,6 +93,11 @@ class _CustomerChatThreadViewState extends State<CustomerChatThreadView> {
                 return const Center(child: CircularProgressIndicator());
               }
 
+              if (controller.isOpeningConversation.value &&
+                  controller.messages.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               if (controller.messageError.value.isNotEmpty &&
                   controller.messages.isEmpty) {
                 return ChatErrorState(

@@ -3,6 +3,8 @@ import 'package:ecom_user_flutter/app/models/ecom/banner_model.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
 import 'package:ecom_user_flutter/app/modules/review/view/shop_reviews_section.dart';
 import 'package:ecom_user_flutter/app/models/ecom/product/shop_model.dart';
+import 'package:ecom_user_flutter/app/routes/app_pages.dart';
+import 'package:ecom_user_flutter/app/services/store_context_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -52,6 +54,8 @@ class _ShopHeader extends StatelessWidget {
     final rating = shop.averageReviewRating.toDouble().toStringAsFixed(1);
     final totalReviews = shop.totalReviews;
     final reviewLabel = totalReviews == 1 ? 'review' : 'reviews';
+    final storeContext = Get.find<StoreContextService>();
+    final chatShopId = shop.id ?? storeContext.activeStoreId.value;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,27 +121,63 @@ class _ShopHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (shop.id != null) ...[
+        if (shop.id != null || chatShopId != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (shop.id != null)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Get.to(
+                      () => ShopReviewsScreen(
+                        shopId: shop.id!,
+                        shopName: shop.shopName ?? shop.name,
+                      ),
+                    ),
+                    icon: const Icon(Icons.rate_review_outlined),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star_rounded,
+                            size: 18, color: Colors.amber.shade700),
+                        const SizedBox(width: 4),
+                        Text('$rating ($totalReviews $reviewLabel)'),
+                      ],
+                    ),
+                  ),
+                ),
+              if (shop.id != null && chatShopId != null)
+                const SizedBox(width: 10),
+              if (chatShopId != null)
+                SizedBox(
+                  height: 48,
+                  width: 54,
+                  child: Tooltip(
+                    message: 'Shop Chat',
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () => Get.toNamed(
+                        Routes.SHOP_CHAT_THREAD,
+                        arguments: {'shop_id': chatShopId},
+                      ),
+                      child: const Icon(Icons.chat_bubble_outline_rounded),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+        if (shop.id == null && chatShopId == null) ...[
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => Get.to(
-                () => ShopReviewsScreen(
-                  shopId: shop.id!,
-                  shopName: shop.shopName ?? shop.name,
-                ),
-              ),
-              icon: const Icon(Icons.rate_review_outlined),
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.star_rounded,
-                      size: 18, color: Colors.amber.shade700),
-                  const SizedBox(width: 4),
-                  Text('$rating ($totalReviews $reviewLabel)'),
-                ],
-              ),
+              onPressed: () => Get.toNamed(Routes.SHOP_CHAT_CONVERSATIONS),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              label: const Text('Shop Chat'),
             ),
           ),
         ],

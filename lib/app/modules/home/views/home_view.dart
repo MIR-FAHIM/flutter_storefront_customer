@@ -196,35 +196,41 @@ class HomeView extends GetView<HomeController> {
                 //   child: HomePromoStrip(),
                 // ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
-
                 // Featured category section
-                SliverToBoxAdapter(
-                  child: HomeSectionHeader(
-                    title: "Featured Category",
-                    actionText: "See All",
-                    onTap: () {
-                      // Get.toNamed(Routes.CATEGORY_VIEW);
-                    },
-                  ),
-                ),
+                Obx(() {
+                  final categoryController = Get.find<CategoryController>();
+                  final hasCategories =
+                      categoryController.categories.isNotEmpty;
+                  final isLoading = categoryController.isLoading.value;
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 10),
-                ),
+                  if (!isLoading && !hasCategories) {
+                    return const SliverToBoxAdapter(
+                      child: SizedBox.shrink(),
+                    );
+                  }
 
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _pagePadding),
-                    child: HomeCategoryRow(),
-                  ),
-                ),
+                  return SliverToBoxAdapter(
+                    child: Column(
+                      children: [
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
+                        HomeSectionHeader(
+                          title: "Featured Category",
+                          actionText: "See All",
+                          onTap: () {
+                            // Get.toNamed(Routes.CATEGORY_VIEW);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        const Padding(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: _pagePadding),
+                          child: HomeCategoryRow(),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                    ),
+                  );
+                }),
 
                 // Featured Product section, PDF uses #00509D with low opacity
                 SliverToBoxAdapter(

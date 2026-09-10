@@ -163,6 +163,7 @@ class LoginController extends GetxController {
       if (isEmail) 'email': input,
       'password': pass,
       'fcm_token': deviceToken.value,
+      'user_type': 'customer' ,
     };
 
     loginFormKey.currentState?.save();
