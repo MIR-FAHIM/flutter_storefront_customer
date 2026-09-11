@@ -63,7 +63,7 @@ class OrderController extends GetxController {
       isLoading.value = false;
     }
   }
-  Future<void> getOrderDetails(dynamic orderId) async {
+  Future<void> getOrderDetails(dynamic orderId, {bool navigate = true}) async {
     if (isOrderDetailsLoading.value) return;
 
     isOrderDetailsLoading.value = true;
@@ -81,7 +81,9 @@ class OrderController extends GetxController {
 
         orderDetails.value = model.data;
 
-        Get.toNamed(Routes.ORDER_DETAIL);
+        if (navigate) {
+          Get.toNamed(Routes.ORDER_DETAIL);
+        }
       } else {
         orderDetailsError.value = res is Map
             ? (res['message']?.toString() ?? 'Failed to load order details')

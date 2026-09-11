@@ -11,7 +11,7 @@ class SplashscreenView extends GetView<SplashscreenController> {
   Widget build(BuildContext context) {
     Get.find<SplashscreenController>();
     return Scaffold(
-      backgroundColor: AppColors.discountBlue,
+      backgroundColor: AppColors.backgroundBlueColor,
       body: Container(
         height: _size.height,
         width: _size.width,
@@ -24,7 +24,7 @@ class SplashscreenView extends GetView<SplashscreenController> {
                 height: 200,
                 width: 200,
                 image: AssetImage(
-                  'assets/logo/myzoo_customer_logo.jpeg',
+                  'assets/logo/mz_trans_logo.png',
                 ),
               ),
             ),
