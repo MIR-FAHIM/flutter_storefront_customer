@@ -48,7 +48,7 @@ class CustomerChatController extends GetxController {
     if (conversationId != null) {
       openThread(conversationId: conversationId);
     } else if (shopId != null) {
-      startConversation(shopId: shopId);
+      startConversation(shopId: shopId, navigateToThread: false);
     } else {
       getConversations(reset: true);
     }
@@ -162,6 +162,9 @@ class CustomerChatController extends GetxController {
 
     isOpeningConversation.value = true;
     error.value = '';
+    messageError.value = '';
+    activeConversation.value = null;
+    messages.clear();
 
     try {
       final response = await _repo.openOrCreateConversation(shopId: shopId);

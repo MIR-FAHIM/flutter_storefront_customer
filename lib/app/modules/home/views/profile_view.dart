@@ -269,6 +269,17 @@ class ProfileView extends GetView<HomeController> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                const SizedBox(height: 3),
+                                controller.profileData.value.email == null ? Container():
+                                Text(
+                                  controller.profileData.value.userType!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withOpacity(0.75),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                             ),
                           ),

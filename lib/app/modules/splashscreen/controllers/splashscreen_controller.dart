@@ -22,18 +22,17 @@ class SplashscreenController extends GetxController {
   Future<void> onInit() async {
 
 
+    
+
     Timer(const Duration(seconds: 3), () {
+      final user = Get.find<AuthService>().currentUser.value.data;
+      if (user == null) {
+        Get.offAllNamed(Routes.LOGIN);
+        return;
+      }
+
       final slug = Get.find<StoreContextService>().storeSlugOrNull;
       Get.offAllNamed(slug == null ? Routes.ROOT : '/store/$slug');
-     //  if(Get.find<AuthService>().currentUser.value.data != null){
-     //    Get.offAllNamed(Routes.ROOT,);
-     //  }else{
-     //    Get.offAllNamed(Routes.LOGIN,);
-     //  }
-
-
-
-
     });
 
     super.onInit();

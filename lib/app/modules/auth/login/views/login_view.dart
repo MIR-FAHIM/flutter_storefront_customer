@@ -18,7 +18,6 @@ class LoginView extends GetView<LoginController> {
 
   static const Color _navy = Color(0xFF1F214C);
   static const Color _accent = Color(0xFF16A34A); // green accent
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -81,7 +80,10 @@ class LoginView extends GetView<LoginController> {
                           ),
                           const SizedBox(width: 6),
                           TextButton(
-                            onPressed: () => Get.toNamed(Routes.SIGNUP),
+                            onPressed: () {
+                              FocusScope.of(context).unfocus();
+                              Get.toNamed(Routes.SIGNUP);
+                            },
                             child: Text(
                               "Create Account".tr,
                               style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.green),
