@@ -19,10 +19,15 @@ class _ProceedOrderPageState extends State<ProceedOrderPage> {
 
   String selectedPayment = 'cod';
   int isOutsideDhaka = 0;
+  bool isWalkInCustomer = false;
 
   CartController get controller => Get.find<CartController>();
 
-  int get shippingCharge => isOutsideDhaka == 1 ? 120 : 60;
+  int get shippingCharge => isWalkInCustomer
+      ? 0
+      : isOutsideDhaka == 1
+          ? 120
+          : 60;
   num get payableTotal => controller.totalAmount.value + shippingCharge;
   bool get isOnlinePayment => selectedPayment == 'online';
 
@@ -121,9 +126,19 @@ class _ProceedOrderPageState extends State<ProceedOrderPage> {
                 sliver: SliverToBoxAdapter(
                   child: _DeliveryAreaCard(
                     isOutsideDhaka: isOutsideDhaka,
+                    isWalkInCustomer: isWalkInCustomer,
+                    onWalkInChanged: (value) {
+                      setState(() {
+                        isWalkInCustomer = value;
+                        if (value) {
+                          selectedPayment = 'cod';
+                        }
+                      });
+                    },
                     onChanged: (value) {
                       setState(() {
                         isOutsideDhaka = value;
+                        isWalkInCustomer = false;
                       });
                     },
                   ),
@@ -186,6 +201,7 @@ class _ProceedOrderPageState extends State<ProceedOrderPage> {
                 sliver: SliverToBoxAdapter(
                   child: _PaymentMethodGroup(
                     selectedPayment: selectedPayment,
+                    isWalkInCustomer: isWalkInCustomer,
                     onChanged: (value) {
                       setState(() {
                         selectedPayment = value;
@@ -245,6 +261,7 @@ class _ProceedOrderPageState extends State<ProceedOrderPage> {
     if (isOnlinePayment) {
       controller.isOutsideDhaka.value = isOutsideDhaka;
       controller.shippingCharge.value = shippingCharge;
+      controller.isWalkInCustomer.value = isWalkInCustomer;
       controller.initiateAamarPayPayment(
         amount: payableTotal,
         isOutsideDhakaValue: isOutsideDhaka,
@@ -254,6 +271,7 @@ class _ProceedOrderPageState extends State<ProceedOrderPage> {
 
     controller.isOutsideDhaka.value = isOutsideDhaka;
     controller.shippingCharge.value = shippingCharge;
+    controller.isWalkInCustomer.value = isWalkInCustomer;
     controller.proceedToShipping();
   }
 
@@ -366,11 +384,15 @@ class _OrderNoteCard extends StatelessWidget {
 class _DeliveryAreaCard extends StatelessWidget {
   const _DeliveryAreaCard({
     required this.isOutsideDhaka,
+    required this.isWalkInCustomer,
     required this.onChanged,
+    required this.onWalkInChanged,
   });
 
   final int isOutsideDhaka;
+  final bool isWalkInCustomer;
   final ValueChanged<int> onChanged;
+  final ValueChanged<bool> onWalkInChanged;
 
   static const Color _line = _ProceedOrderPageState._line;
 
@@ -394,16 +416,23 @@ class _DeliveryAreaCard extends StatelessWidget {
       child: Column(
         children: [
           _AreaOption(
+            title: 'Walk-in customer',
+            subtitle: 'No delivery area or shipping charge needed',
+            selected: isWalkInCustomer,
+            onTap: () => onWalkInChanged(!isWalkInCustomer),
+          ),
+          const Divider(height: 14),
+          _AreaOption(
             title: 'Inside Dhaka',
             subtitle: 'Shipping charge ৳60',
-            selected: isOutsideDhaka == 0,
+            selected: !isWalkInCustomer && isOutsideDhaka == 0,
             onTap: () => onChanged(0),
           ),
           const Divider(height: 14),
           _AreaOption(
             title: 'Outside Dhaka',
             subtitle: 'Shipping charge ৳120',
-            selected: isOutsideDhaka == 1,
+            selected: !isWalkInCustomer && isOutsideDhaka == 1,
             onTap: () => onChanged(1),
           ),
         ],
@@ -725,10 +754,12 @@ class _QtyChip extends StatelessWidget {
 class _PaymentMethodGroup extends StatelessWidget {
   const _PaymentMethodGroup({
     required this.selectedPayment,
+    required this.isWalkInCustomer,
     required this.onChanged,
   });
 
   final String selectedPayment;
+  final bool isWalkInCustomer;
   final ValueChanged<String> onChanged;
 
   static const Color _navy = _ProceedOrderPageState._navy;
@@ -756,9 +787,11 @@ class _PaymentMethodGroup extends StatelessWidget {
         children: [
           _PaymentMethodOption(
             icon: Icons.payments_outlined,
-            title: 'Cash on Delivery',
-            subtitle: 'Pay safely after receiving your order',
-            badge: 'Recommended',
+            title: isWalkInCustomer ? 'Hand Cash' : 'Cash on Delivery',
+            subtitle: isWalkInCustomer
+                ? 'Pay directly at the store counter'
+                : 'Pay safely after receiving your order',
+            badge: isWalkInCustomer ? 'Auto selected' : 'Recommended',
             selected: selectedPayment == 'cod',
             onTap: () => onChanged('cod'),
           ),

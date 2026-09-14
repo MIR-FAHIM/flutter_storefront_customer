@@ -34,6 +34,7 @@ class CartController extends GetxController {
   final selectedAddressIndex = 0.obs;
   // For checkout UI
   final isOutsideDhaka = 0.obs;
+  final isWalkInCustomer = false.obs;
   final shippingCharge = 60.obs;
   final totalAmount = 0.0.obs;
   final mobileController = TextEditingController().obs;
@@ -438,7 +439,8 @@ class CartController extends GetxController {
     required String customerPhone,
     required String shippingAddress,
     required String zone,
-    required String isOutsideDhaka,
+    String? isOutsideDhaka,
+    required String walkInCustomer,
     required String shippingCost,
     required String amount,
     required String paymentMethod,
@@ -452,12 +454,13 @@ class CartController extends GetxController {
       'shipping_address': shippingAddress,
       'zone': zone,
       'note': note,
-      'is_outside_dhaka': isOutsideDhaka,
+      'walk_in_customer': walkInCustomer,
       'shipping_cost': shippingCost,
       'amount': amount,
       'total_amount': amount,
       'payment_method': paymentMethod,
       'platform': platform,
+      if (isOutsideDhaka != null) 'is_outside_dhaka': isOutsideDhaka,
       if (_storeContext.storeSlugOrNull != null)
         'store_slug': _storeContext.storeSlugOrNull!,
     };
@@ -509,7 +512,9 @@ class CartController extends GetxController {
       shippingAddress: _selectedShippingAddress(address),
       zone: address.district?.toString() ?? '',
       note: noteCtrl.value.text,
-      isOutsideDhaka: isOutsideDhaka.value.toString(),
+      isOutsideDhaka:
+          isWalkInCustomer.value ? null : isOutsideDhaka.value.toString(),
+      walkInCustomer: isWalkInCustomer.value ? '1' : '0',
       shippingCost: shippingCharge.value.toString(),
       amount: payableAmount.toString(),
       paymentMethod: 'cod',
@@ -575,7 +580,9 @@ class CartController extends GetxController {
       shippingAddress: _selectedShippingAddress(address),
       zone: address.district?.toString() ?? '',
       note: noteCtrl.value.text,
-      isOutsideDhaka: isOutsideDhakaValue.toString(),
+      isOutsideDhaka:
+          isWalkInCustomer.value ? null : isOutsideDhakaValue.toString(),
+      walkInCustomer: isWalkInCustomer.value ? '1' : '0',
       shippingCost: shippingCharge.value.toString(),
       amount: amount.toString(),
       paymentMethod: 'online',
