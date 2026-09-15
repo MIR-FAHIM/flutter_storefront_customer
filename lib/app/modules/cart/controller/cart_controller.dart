@@ -439,7 +439,7 @@ class CartController extends GetxController {
     required String customerPhone,
     required String shippingAddress,
     required String zone,
-    String? isOutsideDhaka,
+    required String isOutsideDhaka,
     required String walkInCustomer,
     required String shippingCost,
     required String amount,
@@ -460,7 +460,7 @@ class CartController extends GetxController {
       'total_amount': amount,
       'payment_method': paymentMethod,
       'platform': platform,
-      if (isOutsideDhaka != null) 'is_outside_dhaka': isOutsideDhaka,
+      'is_outside_dhaka': isOutsideDhaka,
       if (_storeContext.storeSlugOrNull != null)
         'store_slug': _storeContext.storeSlugOrNull!,
     };
@@ -513,7 +513,7 @@ class CartController extends GetxController {
       zone: address.district?.toString() ?? '',
       note: noteCtrl.value.text,
       isOutsideDhaka:
-          isWalkInCustomer.value ? null : isOutsideDhaka.value.toString(),
+          isWalkInCustomer.value ? '2' : isOutsideDhaka.value.toString(),
       walkInCustomer: isWalkInCustomer.value ? '1' : '0',
       shippingCost: shippingCharge.value.toString(),
       amount: payableAmount.toString(),
@@ -581,7 +581,7 @@ class CartController extends GetxController {
       zone: address.district?.toString() ?? '',
       note: noteCtrl.value.text,
       isOutsideDhaka:
-          isWalkInCustomer.value ? null : isOutsideDhakaValue.toString(),
+          isWalkInCustomer.value ? '2' : isOutsideDhakaValue.toString(),
       walkInCustomer: isWalkInCustomer.value ? '1' : '0',
       shippingCost: shippingCharge.value.toString(),
       amount: amount.toString(),
