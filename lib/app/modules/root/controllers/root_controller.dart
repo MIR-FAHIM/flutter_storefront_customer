@@ -1,13 +1,10 @@
-
 import 'package:ecom_user_flutter/app/modules/cart/view/cart_view.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/view/preferred_store_screen.dart';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecom_user_flutter/app/models/ecom/notification/popup_image_notification.dart';
 import 'package:ecom_user_flutter/app/modules/home/views/home_view.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-
 import '../../order/view/order_view.dart';
 
 
@@ -32,8 +29,6 @@ class RootController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-
-
   }
 
   @override
@@ -43,10 +38,7 @@ class RootController extends GetxController {
     HomeView(),
     OrderHistoryPage(),
     CartView(),
-    //MyAttendanceReportPage(),
-
     PreferredStoreScreen(),
-
   ];
 
   Widget get currentPage => pages[currentIndex.value];
