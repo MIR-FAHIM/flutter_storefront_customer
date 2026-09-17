@@ -104,210 +104,225 @@ class HomeView extends GetView<HomeController> {
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: controller.refreshHome,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              slivers: [
-                Obx(() {
-                  return SliverToBoxAdapter(
-                    child: _PdfStyleHomeHeader(
-                      onProfileTap: () {
-                        Get.toNamed(Routes.PROFILE)?.then((_) {
-                          controller.getUnreadChatCount();
-                        });
-                      },
-                      onSearchTap: () {
-                        final slug =
-                            Get.find<StoreContextService>().storeSlugOrNull;
-                        Get.toNamed(
-                          slug == null
-                              ? Routes.PRODUCT_FILTER
-                              : '/store/$slug/search',
+            child: Obx(() {
+              final preferredStoreController = _preferredStoreController();
+              final hasPreferredStores =
+                  preferredStoreController.preferredStores.isNotEmpty;
+              final isLoadingPreferredStores =
+                  preferredStoreController.isLoading.value;
+              final preferredStoresError = preferredStoreController.error.value;
+
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
+                  Obx(() {
+                    return SliverToBoxAdapter(
+                      child: _PdfStyleHomeHeader(
+                        onProfileTap: () {
+                          Get.toNamed(Routes.PROFILE)?.then((_) {
+                            controller.getUnreadChatCount();
+                          });
+                        },
+                        onSearchTap: () {
+                          final slug =
+                              Get.find<StoreContextService>().storeSlugOrNull;
+                          Get.toNamed(
+                            slug == null
+                                ? Routes.PRODUCT_FILTER
+                                : '/store/$slug/search',
+                          );
+                        },
+                        onMessengerTap: () {
+                          Get.toNamed(Routes.SHOP_CHAT_CONVERSATIONS)
+                              ?.then((_) {
+                            controller.getUnreadChatCount();
+                          });
+                        },
+                        chatBadgeCount: controller.unreadChatCount.value,
+                        onScanTap: () {
+                          Get.toNamed(Routes.QR_SCAN);
+                        },
+                        onNotificationTap: () {
+                          Get.toNamed(Routes.NOTIFICATIONVIEW);
+                        },
+                        onWishlistTap: () {},
+                      ),
+                    );
+                  }),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 5),
+                  ),
+                  if (!hasPreferredStores)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _pagePadding,
+                          vertical: 24,
+                        ),
+                        child: isLoadingPreferredStores
+                            ? const Center(child: CircularProgressIndicator())
+                            : preferredStoresError.isNotEmpty
+                                ? _PreferredStoresLoadError(
+                                    message: preferredStoresError,
+                                    onRetry: preferredStoreController
+                                        .refreshPreferredStores,
+                                  )
+                                : const _ChooseStorePrompt(),
+                      ),
+                    ),
+                  if (hasPreferredStores) ...[
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 12),
+                    ),
+
+                    // Main banner, same position as PDF
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: _pagePadding),
+                        child: HomeBannerCarousel(),
+                      ),
+                    ),
+
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 12),
+                    ),
+
+                    // Today's Deal, All Brands, Top Seller, Flash Sale, New Arrivals, Free Delivery
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: _pagePadding),
+                        child: HomeQuickActionsRow(),
+                      ),
+                    ),
+
+                    // const SliverToBoxAdapter(
+                    //   child: SizedBox(height: 12),
+                    // ),
+                    //
+                    // // Client ad / promo strip
+                    // const SliverToBoxAdapter(
+                    //   child: HomePromoStrip(),
+                    // ),
+
+                    // Featured category section
+                    Obx(() {
+                      final categoryController = Get.find<CategoryController>();
+                      final hasCategories =
+                          categoryController.categories.isNotEmpty;
+                      final isLoading = categoryController.isLoading.value;
+
+                      if (!isLoading && !hasCategories) {
+                        return const SliverToBoxAdapter(
+                          child: SizedBox.shrink(),
                         );
-                      },
-                      onMessengerTap: () {
-                        Get.toNamed(Routes.SHOP_CHAT_CONVERSATIONS)?.then((_) {
-                          controller.getUnreadChatCount();
-                        });
-                      },
-                      chatBadgeCount: controller.unreadChatCount.value,
-                      onScanTap: () {
-                        Get.toNamed(Routes.QR_SCAN);
-                      },
-                      onNotificationTap: () {
-                        Get.toNamed(Routes.NOTIFICATIONVIEW);
-                      },
-                      onWishlistTap: () {},
-                    ),
-                  );
-                }),
+                      }
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 5),
-                ),
-                Obx(() {
-                  final preferredStoreController = _preferredStoreController();
-                  if (preferredStoreController.isLoading.value ||
-                      preferredStoreController.preferredStores.isNotEmpty) {
-                    return const SliverToBoxAdapter(
-                      child: SizedBox.shrink(),
-                    );
-                  }
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: _pagePadding),
-                      child: const _ChooseStorePrompt(),
-                    ),
-                  );
-                }),
-
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 12),
-                ),
-
-                // Main banner, same position as PDF
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _pagePadding),
-                    child: HomeBannerCarousel(),
-                  ),
-                ),
-
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 12),
-                ),
-
-                // Today's Deal, All Brands, Top Seller, Flash Sale, New Arrivals, Free Delivery
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _pagePadding),
-                    child: HomeQuickActionsRow(),
-                  ),
-                ),
-
-                // const SliverToBoxAdapter(
-                //   child: SizedBox(height: 12),
-                // ),
-                //
-                // // Client ad / promo strip
-                // const SliverToBoxAdapter(
-                //   child: HomePromoStrip(),
-                // ),
-
-                // Featured category section
-                Obx(() {
-                  final categoryController = Get.find<CategoryController>();
-                  final hasCategories =
-                      categoryController.categories.isNotEmpty;
-                  final isLoading = categoryController.isLoading.value;
-
-                  if (!isLoading && !hasCategories) {
-                    return const SliverToBoxAdapter(
-                      child: SizedBox.shrink(),
-                    );
-                  }
-
-                  return SliverToBoxAdapter(
-                    child: Column(
-                      children: [
-
-                        HomeSectionHeader(
-                          title: "Featured Category",
-                          actionText: "See All",
-                          onTap: () {
-                            // Get.toNamed(Routes.CATEGORY_VIEW);
-                          },
+                      return SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            HomeSectionHeader(
+                              title: "Featured Category",
+                              actionText: "See All",
+                              onTap: () {
+                                // Get.toNamed(Routes.CATEGORY_VIEW);
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: _pagePadding),
+                              child: HomeCategoryRow(),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-                        const Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: _pagePadding),
-                          child: HomeCategoryRow(),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
+                      );
+                    }),
+
+                    // Featured Product section, PDF uses #00509D with low opacity
+                    SliverToBoxAdapter(
+                      child: _PdfSectionBlock(
+                        backgroundColor:
+                            AppColors.primaryColor.withOpacity(0.32),
+                        padding: const EdgeInsets.fromLTRB(0, 10, 0, 12),
+                        child: const HomeFeaturedProductsSection(),
+                      ),
                     ),
-                  );
-                }),
 
-                // Featured Product section, PDF uses #00509D with low opacity
-                SliverToBoxAdapter(
-                  child: _PdfSectionBlock(
-                    backgroundColor: AppColors.primaryColor.withOpacity(0.32),
-                    padding: const EdgeInsets.fromLTRB(0, 10, 0, 12),
-                    child: const HomeFeaturedProductsSection(),
-                  ),
-                ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 14),
+                    ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
+                    // Medicine or Grocery style product section
+                    SliverToBoxAdapter(
+                      child: _PdfSectionBlock(
+                        backgroundColor: AppColors.backgroundColor,
+                        child: HomeGrocerySection(),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 14),
+                    ),
 
-                // Medicine or Grocery style product section
-                SliverToBoxAdapter(
-                  child: _PdfSectionBlock(
-                    backgroundColor: AppColors.backgroundColor,
-                    child: HomeGrocerySection(),
-                  ),
-                ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
+                    SliverToBoxAdapter(
+                      child: _PdfSectionBlock(
+                        backgroundColor: AppColors.backgroundColor,
+                        child: HomeMedicineSection(),
+                      ),
+                    ),
 
-                SliverToBoxAdapter(
-                  child: _PdfSectionBlock(
-                    backgroundColor: AppColors.backgroundColor,
-                    child: HomeMedicineSection(),
-                  ),
-                ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 14),
+                    ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
+                    // Fashion section, PDF uses #A59E83 around 60% opacity
+                    SliverToBoxAdapter(
+                      child: HomeCategoryChildRow(
+                        title: "Fashion",
+                        backgroundColor:
+                            AppColors.fashionColor.withOpacity(0.60),
+                        onSeeAllTap: () {
+                          Get.find<ProductController>()
+                              .openCategoryWiseProducts(5);
+                        },
+                        onItemTap: (item) {
+                          Get.find<ProductController>()
+                              .openCategoryWiseProducts(item.id);
+                        },
+                      ),
+                    ),
 
-                // Fashion section, PDF uses #A59E83 around 60% opacity
-                SliverToBoxAdapter(
-                  child: HomeCategoryChildRow(
-                    title: "Fashion",
-                    backgroundColor: AppColors.fashionColor.withOpacity(0.60),
-                    onSeeAllTap: () {
-                      Get.find<ProductController>().openCategoryWiseProducts(5);
-                    },
-                    onItemTap: (item) {
-                      Get.find<ProductController>()
-                          .openCategoryWiseProducts(item.id);
-                    },
-                  ),
-                ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 14),
+                    ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
+                    // Baby care section
+                    SliverToBoxAdapter(
+                      child: _PdfSectionBlock(
+                        backgroundColor: AppColors.backgroundColor,
+                        child: HomeBabyCareSection(),
+                      ),
+                    ),
 
-                // Baby care section
-                SliverToBoxAdapter(
-                  child: _PdfSectionBlock(
-                    backgroundColor: AppColors.backgroundColor,
-                    child: HomeBabyCareSection(),
-                  ),
-                ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 14),
+                    ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 14),
-                ),
+                    // Additional product section placeholder using your existing restaurant widget
+                    SliverToBoxAdapter(
+                      child: HomeAllProductsSection(),
+                    ),
 
-                // Additional product section placeholder using your existing restaurant widget
-                SliverToBoxAdapter(
-                  child: HomeAllProductsSection(),
-                ),
-
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 22),
-                ),
-              ],
-            ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 22),
+                    ),
+                  ],
+                ],
+              );
+            }),
           ),
         ),
       ),
@@ -494,34 +509,70 @@ class _ChooseStorePrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: (){
-        Get.toNamed(Routes.PREFERRED_STORES);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.redColor.withOpacity(0.3)),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Icon(Icons.storefront_outlined,
+            size: 64, color: AppColors.primaryColor),
+        const SizedBox(height: 16),
+        Text(
+          'Choose your preferred store',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
         ),
-        child: Row(
-          children: [
-            Icon(Icons.storefront_outlined, color: AppColors.primaryColor),
-            const SizedBox(width: 10),
-            const Expanded(
-            child: Text(
-              'QR স্ক্যান অথবা দোকানের কোড নম্বর দিয়ে আপনার পছন্দের স্টোর যুক্ত করে নিন।',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-          IconButton.filled(
-            onPressed: () => Get.toNamed(Routes.PREFERRED_STORES),
-            icon: const Icon(Icons.arrow_forward_rounded),
-          ),
-        ],
-      ),
-    ),
+        const SizedBox(height: 8),
+        const Text(
+          'Scan a shop QR code or find a shop with its 6 digit code.',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
+        FilledButton.icon(
+          onPressed: () => Get.toNamed(Routes.QR_SCAN),
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          label: const Text('Scan Shop QR'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => Get.toNamed(Routes.PREFERRED_STORE_CODE_LOOKUP),
+          icon: const Icon(Icons.pin_outlined),
+          label: const Text('Find Shop by Code'),
+        ),
+        const SizedBox(height: 10),
+        TextButton.icon(
+          onPressed: () => Get.toNamed(Routes.SHOP_LIST),
+          icon: const Icon(Icons.storefront_rounded),
+          label: const Text('Browse Stores'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreferredStoresLoadError extends StatelessWidget {
+  const _PreferredStoresLoadError(
+      {required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.error_outline_rounded, size: 48),
+        const SizedBox(height: 12),
+        Text(message, textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Retry'),
+        ),
+      ],
     );
   }
 }

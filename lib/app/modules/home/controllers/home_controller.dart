@@ -5,6 +5,7 @@ import 'package:ecom_user_flutter/app/repositories/auth_repositories.dart';
 import 'package:ecom_user_flutter/app/repositories/delivery_rep.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
 import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
+import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:get/get.dart';
@@ -56,6 +57,8 @@ class HomeController extends GetxController {
       Get.find<BannerController>().getBanners(),
       Get.find<BannerController>().getShopDetails(),
       Get.find<ProductController>().reloadStorefrontData(),
+      if (Get.isRegistered<PreferredStoreController>())
+        Get.find<PreferredStoreController>().refreshPreferredStores(),
     ]);
   }
 
@@ -64,14 +67,11 @@ class HomeController extends GetxController {
 
     print("i am here 543");
     if (response is Map && response['status'] == 'success') {
-
       final data = response['data'];
       if (data is Map) {
-
         unreadChatCount.value =
             int.tryParse(data['total_unread_count'].toString()) ?? 0;
         print("i am here 453  ${unreadChatCount.value}");
-
       }
     }
   }
