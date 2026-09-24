@@ -33,6 +33,7 @@ class CustomerChatController extends GetxController {
   int _conversationRequestToken = 0;
   int _messageRequestToken = 0;
   int? _loadedConversationId;
+  OrderChatContext? _pendingOrderContext;
 
   @override
   void onInit() {
@@ -44,11 +45,16 @@ class CustomerChatController extends GetxController {
       'id',
     });
     final shopId = _readInt(args, const {'shop_id', 'shopId'});
+    final orderContext = _readOrderContext(args);
 
     if (conversationId != null) {
       openThread(conversationId: conversationId);
     } else if (shopId != null) {
-      startConversation(shopId: shopId, navigateToThread: false);
+      startConversation(
+        shopId: shopId,
+        navigateToThread: false,
+        orderContext: orderContext,
+      );
     } else {
       getConversations(reset: true);
     }
@@ -133,6 +139,7 @@ class CustomerChatController extends GetxController {
     int? conversationId,
     int? shopId,
     Conversation? conversation,
+    dynamic arguments,
   }) async {
     if (conversation != null) {
       activeConversation.value = conversation;
@@ -149,17 +156,23 @@ class CustomerChatController extends GetxController {
     }
 
     if (shopId != null) {
-      await startConversation(shopId: shopId, navigateToThread: false);
+      await startConversation(
+        shopId: shopId,
+        navigateToThread: false,
+        orderContext: _readOrderContext(arguments),
+      );
     }
   }
 
   Future<void> startConversation({
     required int shopId,
     bool navigateToThread = true,
+    OrderChatContext? orderContext,
   }) async {
     if (!_guardLogin()) return;
     if (isOpeningConversation.value) return;
 
+    _prepareOrderDraft(orderContext);
     isOpeningConversation.value = true;
     error.value = '';
     messageError.value = '';
@@ -273,6 +286,7 @@ class CustomerChatController extends GetxController {
     final text = messageController.text.trim();
     if (conversationId == null || text.isEmpty || isSending.value) return;
 
+    final orderContext = _pendingOrderContext;
     final replyId = replyPreview.value?.id;
     final pending = ChatMessage.pending(
       conversationId: conversationId,
@@ -289,9 +303,12 @@ class CustomerChatController extends GetxController {
       final response = await _repo.sendMessage(
         conversationId: conversationId,
         message: text,
+        messageType: orderContext == null ? 'text' : 'order',
+        orderId: orderContext?.orderId,
         replyToMessageId: replyId,
       );
       if (_isSuccess(response)) {
+        _pendingOrderContext = null;
         final sent = _messageFromResponse(response);
         final index = messages.indexOf(pending);
         if (index >= 0 && sent != null) {
@@ -306,6 +323,7 @@ class CustomerChatController extends GetxController {
 
       pending.isFailed = true;
       messages.refresh();
+      _restoreFailedDraft(text);
       Get.showSnackbar(
         Ui.ErrorSnackBar(
           title: 'Chat'.tr,
@@ -316,12 +334,30 @@ class CustomerChatController extends GetxController {
     } catch (e) {
       pending.isFailed = true;
       messages.refresh();
+      _restoreFailedDraft(text);
       Get.showSnackbar(
         Ui.ErrorSnackBar(title: 'Chat'.tr, message: _messageFromException(e)),
       );
     } finally {
       isSending.value = false;
     }
+  }
+
+  void _prepareOrderDraft(OrderChatContext? context) {
+    _pendingOrderContext = context;
+    if (context == null) return;
+    messageController.value = TextEditingValue(
+      text: context.message,
+      selection: TextSelection.collapsed(offset: context.message.length),
+    );
+  }
+
+  void _restoreFailedDraft(String text) {
+    if (messageController.text.trim().isNotEmpty) return;
+    messageController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
   }
 
   Future<void> markConversationRead(int conversationId) async {
@@ -449,11 +485,49 @@ class CustomerChatController extends GetxController {
     return null;
   }
 
+  OrderChatContext? _readOrderContext(dynamic source) {
+    if (source is! Map || source['order_context'] is! Map) return null;
+    final value = source['order_context'] as Map;
+    final orderId = _asInt(value['order_id']);
+    if (orderId == null) return null;
+
+    return OrderChatContext(
+      orderId: orderId,
+      orderCode: value['order_code']?.toString(),
+      totalPrice: value['total_price']?.toString(),
+      totalItems: _asInt(value['total_items']) ?? 0,
+    );
+  }
+
   int? _asInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
     if (value is double) return value.toInt();
     return int.tryParse(value.toString()) ??
         double.tryParse(value.toString())?.toInt();
+  }
+}
+
+class OrderChatContext {
+  const OrderChatContext({
+    required this.orderId,
+    required this.orderCode,
+    required this.totalPrice,
+    required this.totalItems,
+  });
+
+  final int orderId;
+  final String? orderCode;
+  final String? totalPrice;
+  final int totalItems;
+
+  String get message {
+    final code = orderCode?.trim();
+    final total = totalPrice?.trim();
+    return [
+      code == null || code.isEmpty ? 'Order #$orderId' : 'Order $code',
+      if (total != null && total.isNotEmpty) 'Total: $total',
+      'Items: $totalItems',
+    ].join(' | ');
   }
 }

@@ -31,6 +31,7 @@ class _CustomerChatThreadViewState extends State<CustomerChatThreadView> {
         }),
         shopId: _readInt(args, const {'shop_id', 'shopId'}),
         conversation: conversation,
+        arguments: args,
       );
     });
   }

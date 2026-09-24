@@ -1,4 +1,3 @@
-
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/modules/order/controller/order_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
@@ -30,7 +29,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final orderId = _readOrderId(Get.arguments);
+      final orderId = _readOrderId(Get.arguments) ?? Get.parameters['order_id'];
 
       if (orderId == null) {
         controller.orderDetailsError.value = 'Order ID not found';
@@ -87,7 +86,8 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
             return _ErrorState(
               message: controller.orderDetailsError.value,
               onRetry: () {
-                final orderId = _readOrderId(Get.arguments);
+                final orderId =
+                    _readOrderId(Get.arguments) ?? Get.parameters['order_id'];
                 if (orderId != null) {
                   controller.getOrderDetails(orderId, navigate: false);
                 }
@@ -115,36 +115,21 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _OrderHeaderCard(order: order),
-
                   const SizedBox(height: 12),
-
                   _StatusTimelineCard(order: order),
-
                   const SizedBox(height: 12),
-
                   _DeliveryInfoCard(order: order),
-
                   const SizedBox(height: 12),
-
-                  if (order.hasDeliveryMan)
-                    _DeliveryManCard(order: order),
-
-                  if (order.hasDeliveryMan)
-                    const SizedBox(height: 12),
-
+                  if (order.hasDeliveryMan) _DeliveryManCard(order: order),
+                  if (order.hasDeliveryMan) const SizedBox(height: 12),
                   _ItemsCard(order: order),
-
                   const SizedBox(height: 12),
-
                   _PaymentSummaryCard(order: order),
-
                   if (order.note.trim().isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _NoteCard(note: order.note),
                   ],
-
                   const SizedBox(height: 18),
-
                   _BottomActions(order: order),
                 ],
               ),
@@ -185,9 +170,7 @@ class _OrderHeaderCard extends StatelessWidget {
               size: 36,
             ),
           ),
-
           const SizedBox(height: 12),
-
           Text(
             order.orderNumber,
             textAlign: TextAlign.center,
@@ -197,9 +180,7 @@ class _OrderHeaderCard extends StatelessWidget {
               fontSize: 17,
             ),
           ),
-
           const SizedBox(height: 8),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -214,9 +195,7 @@ class _OrderHeaderCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -247,9 +226,7 @@ class _OrderHeaderCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 10),
-
           _InfoRow(
             label: 'Created At',
             value: _date(order.createdAt),
@@ -295,9 +272,7 @@ class _StatusTimelineCard extends StatelessWidget {
             icon: Icons.timeline_rounded,
             title: 'Order Status',
           ),
-
           const SizedBox(height: 14),
-
           Row(
             children: List.generate(steps.length, (index) {
               final active = index <= currentStep;
@@ -381,18 +356,14 @@ class _DeliveryInfoCard extends StatelessWidget {
             icon: Icons.location_on_outlined,
             title: 'Delivery Information',
           ),
-
           const SizedBox(height: 10),
-
           _InfoRow(label: 'Customer', value: order.customerName),
           _InfoRow(label: 'Phone', value: order.customerPhone),
           _InfoRow(label: 'Address', value: order.shippingAddress),
-          if (order.zone.isNotEmpty)
-            _InfoRow(label: 'Zone', value: order.zone),
+          if (order.zone.isNotEmpty) _InfoRow(label: 'Zone', value: order.zone),
           if (order.district != null)
             _InfoRow(label: 'District', value: order.district!),
-          if (order.area != null)
-            _InfoRow(label: 'Area', value: order.area!),
+          if (order.area != null) _InfoRow(label: 'Area', value: order.area!),
         ],
       ),
     );
@@ -425,9 +396,7 @@ class _DeliveryManCard extends StatelessWidget {
             icon: Icons.delivery_dining_rounded,
             title: 'Delivery Man',
           ),
-
           const SizedBox(height: 12),
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -443,9 +412,7 @@ class _DeliveryManCard extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +453,6 @@ class _DeliveryManCard extends StatelessWidget {
                   ],
                 ),
               ),
-
               _StatusChip(
                 text: assignment.status,
                 color: Colors.blue,
@@ -518,9 +484,7 @@ class _ItemsCard extends StatelessWidget {
             icon: Icons.shopping_bag_outlined,
             title: 'Items (${order.items.length})',
           ),
-
           const SizedBox(height: 12),
-
           ListView.separated(
             itemCount: order.items.length,
             shrinkWrap: true,
@@ -546,9 +510,7 @@ class _ItemsCard extends StatelessWidget {
                       size: 22,
                     ),
                   ),
-
                   const SizedBox(width: 10),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,9 +549,7 @@ class _ItemsCard extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   const SizedBox(width: 8),
-
                   Text(
                     _money(item.lineTotal),
                     style: const TextStyle(
@@ -627,15 +587,11 @@ class _PaymentSummaryCard extends StatelessWidget {
             icon: Icons.payments_outlined,
             title: 'Payment Summary',
           ),
-
           const SizedBox(height: 10),
-
           _InfoRow(label: 'Subtotal', value: _money(order.subtotal)),
           _InfoRow(label: 'Shipping Fee', value: _money(order.shippingFee)),
           _InfoRow(label: 'Discount', value: _money(order.discount)),
-
           const Divider(height: 18),
-
           _InfoRow(
             label: 'Total',
             value: _money(order.total),
@@ -725,9 +681,7 @@ class _BottomActions extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(height: 10),
-
         SizedBox(
           height: 48,
           width: double.infinity,
@@ -1019,7 +973,8 @@ Color _statusColor(String status) {
   if (value == 'confirmed') return Colors.blue;
   if (value == 'processing') return Colors.deepPurple;
   if (value == 'shipped' || value == 'on_the_way') return Colors.indigo;
-  if (value == 'delivered' || value == 'completed') return const Color(0xFF16A34A);
+  if (value == 'delivered' || value == 'completed')
+    return const Color(0xFF16A34A);
   if (value == 'cancelled' || value == 'failed') return Colors.redAccent;
 
   return Colors.grey;

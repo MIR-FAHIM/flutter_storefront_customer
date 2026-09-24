@@ -355,12 +355,14 @@ class ChatOrder {
   final String? orderNumber;
   final String? status;
   final String? total;
+  final int? totalItems;
 
   const ChatOrder({
     this.id,
     this.orderNumber,
     this.status,
     this.total,
+    this.totalItems,
   });
 
   factory ChatOrder.fromJson(Map<String, dynamic> json) {
@@ -369,6 +371,7 @@ class ChatOrder {
       orderNumber: _nullableString(json['order_number'] ?? json['code']),
       status: _nullableString(json['status'] ?? json['delivery_status']),
       total: _nullableString(json['total'] ?? json['grand_total']),
+      totalItems: _int(json['total_items'] ?? json['items_count']),
     );
   }
 }

@@ -1,64 +1,116 @@
-// lib/app/modules/order/views/order_history_page.dart
-
 import 'package:ecom_user_flutter/app/models/ecom/order/order_history_model.dart';
+import 'package:ecom_user_flutter/app/modules/order/controller/order_controller.dart';
+import 'package:ecom_user_flutter/app/modules/root/controllers/root_controller.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
+import 'package:ecom_user_flutter/common/Color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import 'package:ecom_user_flutter/app/modules/order/controller/order_controller.dart';
 
 class OrderHistoryPage extends GetView<OrderController> {
   const OrderHistoryPage({super.key});
 
-  static const Color _navy = Color(0xFF1F214C);
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Get.back(),
+          tooltip: 'Back to home',
+          onPressed: () => Get.find<RootController>().currentIndex.value = 0,
+          icon: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
         ),
         title: Text(
-          "Order History",
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: Colors.black87,
+          'Order History',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh orders',
+            onPressed: controller.userOrderHistoryController,
+            icon: Icon(Icons.refresh_rounded, color: AppColors.primaryColor),
+          ),
+          const SizedBox(width: 6),
+        ],
       ),
       body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+        if (controller.isLoading.value && controller.orderHistory.isEmpty) {
+          return const _LoadingState();
         }
 
-        if (controller.error.value.isNotEmpty) {
+        if (controller.error.value.isNotEmpty &&
+            controller.orderHistory.isEmpty) {
           return _ErrorState(
             message: controller.error.value,
             onRetry: controller.userOrderHistoryController,
           );
         }
 
-        final items = controller.orderHistory.value ?? <OrderHistoryItem>[];
-        if (items.isEmpty) return const _EmptyState();
+        final orders = controller.orderHistory;
+        if (orders.isEmpty) {
+          return _EmptyState(onRefresh: controller.userOrderHistoryController);
+        }
 
         return RefreshIndicator(
-          onRefresh: () async => controller.userOrderHistoryController(),
+          onRefresh: controller.userOrderHistoryController,
           child: ListView.separated(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _OrderCard(item: items[i]),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
+            itemCount: orders.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _OrderCountHeader(count: orders.length);
+              }
+              return _OrderCard(item: orders[index - 1]);
+            },
           ),
         );
       }),
+    );
+  }
+}
+
+class _OrderCountHeader extends StatelessWidget {
+  const _OrderCountHeader({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$count ${count == 1 ? 'order' : 'orders'}',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+          Icon(Icons.swipe_down_alt_rounded,
+              size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 5),
+          Text(
+            'Pull to refresh',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -68,209 +120,254 @@ class _OrderCard extends StatelessWidget {
 
   final OrderHistoryItem item;
 
-  static const Color _navy = Color(0xFF1F214C);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final shopName = _firstText([
+      item.shop?.shopName,
+      item.shop?.name,
+      item.shopName,
+    ]);
+    final itemCount = item.totalItems ?? item.items.length;
+    final shopId = item.shop?.id ?? item.shopId;
+    final status = _statusStyle(item.status);
+    final payment = _paymentStyle(item.paymentStatus);
 
-    final status = (item.status ?? "").trim().toLowerCase();
-    final payment = (item.paymentStatus ?? "").trim().toLowerCase();
-
-    final statusUi = _statusChip(status);
-    final payUi = _paymentChip(payment);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        // TODO: route to order detail page
-       Get.find<OrderController>().getOrderDetails(item.id.toString());
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-              color: Colors.black.withOpacity(0.05),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // top row: order number + total
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.orderNumber ?? "-",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: item.id == null
+            ? null
+            : () => Get.find<OrderController>().getOrderDetails(item.id),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.storefront_outlined,
+                      color: AppColors.primaryColor,
+                      size: 22,
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  "৳${_money(item.total)}",
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: _navy,
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          shopName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.orderNumber ?? 'Order #${item.id ?? '-'}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: shopId == null || shopId <= 0
+                        ? 'Shop chat unavailable'
+                        : 'Chat about this order',
+                    onPressed: shopId == null || shopId <= 0
+                        ? null
+                        : () => _openOrderChat(
+                              item: item,
+                              shopId: shopId,
+                              itemCount: itemCount,
+                            ),
+                    style: IconButton.styleFrom(
+                      foregroundColor: AppColors.primaryColor,
+                      backgroundColor:
+                          AppColors.primaryColor.withValues(alpha: 0.08),
+                      disabledForegroundColor: AppColors.textMuted,
+                    ),
+                    icon: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                ],
+              ),
+              const SizedBox(height: 13),
+              Divider(height: 1, color: AppColors.dividerColor),
+              const SizedBox(height: 13),
+              Row(
+                children: [
+                  Expanded(
+                    child: _OrderMetric(
+                      label: 'Placed on',
+                      value: _formatDate(item.createdAt),
+                    ),
+                  ),
+                  _MetricDivider(color: AppColors.dividerColor),
+                  Expanded(
+                    child: _OrderMetric(
+                      label: 'Items',
+                      value: itemCount.toString(),
+                      centered: true,
+                    ),
+                  ),
+                  _MetricDivider(color: AppColors.dividerColor),
+                  Expanded(
+                    child: _OrderMetric(
+                      label: 'Total',
+                      value: '৳${_money(item.total)}',
+                      alignEnd: true,
+                      emphasized: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 13),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: [
+                  _StatusBadge(
+                    icon: status.icon,
+                    text: status.label,
+                    background: status.background,
+                    foreground: status.foreground,
+                  ),
+                  _StatusBadge(
+                    icon: payment.icon,
+                    text: payment.label,
+                    background: payment.background,
+                    foreground: payment.foreground,
+                  ),
+                  if ((item.paymentMethod ?? '').trim().isNotEmpty)
+                    _StatusBadge(
+                      icon: Icons.payments_outlined,
+                      text: _titleCase(item.paymentMethod!),
+                      background: AppColors.softCardBackground,
+                      foreground: AppColors.textSecondary,
+                    ),
+                ],
+              ),
+              if ((item.shippingAddress ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 13),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on_outlined,
+                        size: 17, color: AppColors.textMuted),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        item.shippingAddress!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-            const SizedBox(height: 10),
-
-            // chips row
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _Chip(text: statusUi.$1, bg: statusUi.$2, fg: statusUi.$3),
-                _Chip(text: payUi.$1, bg: payUi.$2, fg: payUi.$3),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // info rows
-            _InfoRow(
-              icon: Icons.person_outline,
-              label: "Customer",
-              value: item.customerName ?? "-",
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.location_on_outlined,
-              label: "Address",
-              value: item.shippingAddress ?? "-",
-              maxLines: 2,
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.calendar_today_outlined,
-              label: "Date",
-              value: _formatDate(item.createdAt),
-            ),
-
-            if ((item.note ?? "").trim().isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Container(
+              const SizedBox(height: 12),
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Text(
-                  item.note!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                    height: 1.35,
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                          Get.find<OrderController>().getOrderDetails(item.id),
+                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                  label: const Text('View order details'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryColor,
+                    side: BorderSide(
+                      color: AppColors.primaryColor.withValues(alpha: 0.28),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
-
-  (String, Color, Color) _statusChip(String status) {
-    switch (status) {
-      case 'completed':
-        return ("Completed", const Color(0xFFE8F7EE), const Color(0xFF15803D));
-      case 'delivered':
-        return ("Delivered", const Color(0xFFEAF2FF), const Color(0xFF1D4ED8));
-      case 'processing':
-        return ("Processing", const Color(0xFFFFF6E6), const Color(0xFFB45309));
-      case 'pending':
-      default:
-        return ("Pending", const Color(0xFFF3F4F6), const Color(0xFF374151));
-    }
-  }
-
-  (String, Color, Color) _paymentChip(String payment) {
-    switch (payment) {
-      case 'paid':
-        return ("Paid", const Color(0xFFE8F7EE), const Color(0xFF15803D));
-      case 'unpaid':
-      default:
-        return ("Unpaid", const Color(0xFFFFE9E9), const Color(0xFFB91C1C));
-    }
-  }
-
-  String _money(double? v) {
-    final n = (v ?? 0).toDouble();
-    if (n == n.roundToDouble()) return n.toInt().toString();
-    return n.toStringAsFixed(2);
-  }
-
-  String _formatDate(String? iso) {
-    if (iso == null || iso.trim().isEmpty) return "-";
-    // keep simple (no intl dependency)
-    // "2026-01-29T06:11:19.000000Z" -> "2026-01-29 06:11"
-    final s = iso.replaceAll("T", " ");
-    final cut = s.split(".").first;
-    if (cut.length >= 16) return cut.substring(0, 16);
-    return cut;
-  }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
+class _OrderMetric extends StatelessWidget {
+  const _OrderMetric({
     required this.label,
     required this.value,
-    this.maxLines = 1,
+    this.centered = false,
+    this.alignEnd = false,
+    this.emphasized = false,
   });
 
-  final IconData icon;
   final String label;
   final String value;
-  final int maxLines;
+  final bool centered;
+  final bool alignEnd;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      crossAxisAlignment: (maxLines > 1) ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+    final alignment = alignEnd
+        ? CrossAxisAlignment.end
+        : centered
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start;
+    return Column(
+      crossAxisAlignment: alignment,
       children: [
-        Icon(icon, size: 18, color: Colors.black54),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 78,
-          child: Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.black54,
-              fontWeight: FontWeight.w800,
-            ),
+        Text(
+          label,
+          maxLines: 1,
+          style: TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            value,
-            maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.w800,
-              height: 1.35,
-            ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: emphasized ? AppColors.primaryColor : AppColors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -278,55 +375,164 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.bg, required this.fg});
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider({required this.color});
 
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 34, color: color);
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.icon,
+    required this.text,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
   final String text;
-  final Color bg;
-  final Color fg;
+  final Color background;
+  final Color foreground;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
+        color: background,
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: fg,
-          fontWeight: FontWeight.w900,
-          fontSize: 12,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foreground),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: TextStyle(
+              color: foreground,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+class _StatusStyle {
+  const _StatusStyle({
+    required this.label,
+    required this.icon,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+}
+
+_StatusStyle _statusStyle(String? rawStatus) {
+  final status = (rawStatus ?? '').trim().toLowerCase();
+  switch (status) {
+    case 'completed':
+    case 'delivered':
+      return _StatusStyle(
+        label: _titleCase(status),
+        icon: Icons.check_circle_outline_rounded,
+        background: const Color(0xFFE8F7EE),
+        foreground: const Color(0xFF15803D),
+      );
+    case 'processing':
+    case 'confirmed':
+      return _StatusStyle(
+        label: _titleCase(status),
+        icon: Icons.sync_rounded,
+        background: const Color(0xFFEAF2FF),
+        foreground: const Color(0xFF1D4ED8),
+      );
+    case 'cancelled':
+    case 'canceled':
+      return _StatusStyle(
+        label: 'Cancelled',
+        icon: Icons.cancel_outlined,
+        background: const Color(0xFFFFE9E9),
+        foreground: const Color(0xFFB91C1C),
+      );
+    default:
+      return _StatusStyle(
+        label: status.isEmpty ? 'Pending' : _titleCase(status),
+        icon: Icons.schedule_rounded,
+        background: const Color(0xFFFFF6E6),
+        foreground: const Color(0xFFB45309),
+      );
+  }
+}
+
+_StatusStyle _paymentStyle(String? rawStatus) {
+  final status = (rawStatus ?? '').trim().toLowerCase();
+  final paid = status == 'paid';
+  return _StatusStyle(
+    label: status.isEmpty ? 'Unpaid' : _titleCase(status),
+    icon: paid ? Icons.verified_outlined : Icons.pending_outlined,
+    background: paid ? const Color(0xFFE8F7EE) : const Color(0xFFFFE9E9),
+    foreground: paid ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
+  );
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: CircularProgressIndicator(color: AppColors.primaryColor),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.onRefresh});
+
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey.shade400),
-            const SizedBox(height: 10),
-            const Text(
-              "No orders yet",
-              style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87),
+            Icon(Icons.receipt_long_outlined,
+                size: 58, color: AppColors.textMuted),
+            const SizedBox(height: 14),
+            Text(
+              'No orders yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              "Your orders will show here after checkout.",
+            Text(
+              'Your orders will appear here after checkout.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black54),
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Refresh'),
             ),
           ],
         ),
@@ -345,23 +551,86 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(Icons.error_outline_rounded,
+                size: 52, color: AppColors.errorColor),
+            const SizedBox(height: 12),
+            Text(
+              'Could not load orders',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 6),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.black87),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
+            const SizedBox(height: 16),
+            FilledButton.icon(
               onPressed: onRetry,
-              child: const Text("Retry"),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try again'),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+String _firstText(List<String?> values) {
+  for (final value in values) {
+    if (value != null && value.trim().isNotEmpty) return value.trim();
+  }
+  return 'Store unavailable';
+}
+
+void _openOrderChat({
+  required OrderHistoryItem item,
+  required int shopId,
+  required int itemCount,
+}) {
+  Get.toNamed(
+    Routes.SHOP_CHAT_THREAD,
+    arguments: {
+      'shop_id': shopId,
+      'order_context': {
+        'order_id': item.id,
+        'order_code': item.orderNumber,
+        'total_price': item.total,
+        'total_items': itemCount,
+      },
+    },
+  );
+}
+
+String _money(double? value) {
+  final amount = value ?? 0;
+  return amount == amount.roundToDouble()
+      ? amount.toInt().toString()
+      : amount.toStringAsFixed(2);
+}
+
+String _formatDate(String? value) {
+  final date = DateTime.tryParse(value ?? '')?.toLocal();
+  if (date == null) return '-';
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  return '$day/$month/${date.year}';
+}
+
+String _titleCase(String value) {
+  final normalized = value.trim().replaceAll('_', ' ');
+  if (normalized.isEmpty) return normalized;
+  return normalized
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
 }
