@@ -1,4 +1,5 @@
 import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
+import 'package:ecom_user_flutter/app/models/ecom/product/product_detail.dart';
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/product_card_widget.dart';
@@ -22,7 +23,7 @@ class ProductDetailPage extends GetView<ProductController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final dynamic product = controller.productDetail.value;
+      final ProductDetail? product = controller.productDetail.value;
 
       if (controller.productDetailLoading.value && product == null) {
         return const Scaffold(
@@ -1003,31 +1004,22 @@ class _SellerCard extends StatelessWidget {
     required this.product,
   });
 
-  final dynamic product;
+  final ProductDetail product;
 
   @override
   Widget build(BuildContext context) {
     final sellerName = _ProductDetailHelper._clean(
       _ProductDetailHelper._firstValue([
-            () => product.shop?.shopName,
-            () => product.seller?.name,
-            () => product.addedBy,
-            () => product.sellerName,
-            () => product['shop']?['name'],
-            () => product['seller']?['name'],
-            () => product['added_by'],
-            () => product['seller_name'],
+            () => product.shop?.name,
+
       ]),
-      fallback: 'Color Crush',
+      fallback: '..',
     );
 
     final sellerImage = _ProductDetailHelper._clean(
       _ProductDetailHelper._firstValue([
-            () => product.shop?.logo?.resolvedUrl,
-            () => product.shop?.logo?.url,
-            () => product.seller?.avatar,
-            () => product['shop']?['logo']?['resolved_url'],
-            () => product['shop']?['logo']?['url'],
+            () => product.shop!.avatar!,
+
       ]),
     );
 
@@ -1073,7 +1065,7 @@ class _SellerCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Manufacturer",
+                  "Store",
                   style: TextStyle(
                     color: Color(0xFF6B7280),
                     fontWeight: FontWeight.w700,

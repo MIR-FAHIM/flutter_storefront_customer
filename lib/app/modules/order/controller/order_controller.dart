@@ -1,19 +1,14 @@
 // lib/app/modules/category/controller/category_controller.dart
 
-import 'package:ecom_user_flutter/app/models/ecom/delivery/order_detail.dart' hide OrderDetailsData;
-import 'package:ecom_user_flutter/app/models/ecom/order/cart_model.dart';
 import 'package:ecom_user_flutter/app/models/ecom/order/order_details.dart';
 import 'package:ecom_user_flutter/app/models/ecom/order/order_history_model.dart';
-import 'package:ecom_user_flutter/app/models/ecom/order/user_address_model.dart';
-import 'package:ecom_user_flutter/app/models/ecom/product/category_model.dart';
-import 'package:ecom_user_flutter/app/repositories/delivery_rep.dart';
 import 'package:ecom_user_flutter/app/repositories/order_rep.dart';
 import 'package:ecom_user_flutter/app/services/auth_service.dart';
-
 
 import 'package:get/get.dart';
 
 import '../../../routes/app_pages.dart';
+import '../../../routes/store_navigation.dart';
 
 class OrderController extends GetxController {
   final isLoading = false.obs;
@@ -28,18 +23,15 @@ class OrderController extends GetxController {
   final orderHistory = <OrderHistoryItem>[].obs;
   @override
   void onInit() {
-
-    if(Get.find<AuthService>().currentUser.value.data  != null){
+    if (Get.find<AuthService>().currentUser.value.data != null) {
       userOrderHistoryController();
     }
 
     super.onInit();
-
   }
+
   Future<void> userOrderHistoryController() async {
-
     print('i am userOrderHistoryController');
-
 
     isLoading.value = true;
     error.value = '';
@@ -50,12 +42,13 @@ class OrderController extends GetxController {
       // print('Category API res = $res');
 
       if (res is Map && res['status'] == 'success') {
-        final model = OrderHistoryResModel.fromJson(res as Map<String, dynamic>);
-        orderHistory.value = model.data!.items!;
+        final model =
+            OrderHistoryResModel.fromJson(res as Map<String, dynamic>);
+        orderHistory.assignAll(model.data?.items ?? const []);
         print('i am here3456523');
       } else {
         error.value =
-        (res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed');
+            (res is Map ? (res['message']?.toString() ?? 'Failed') : 'Failed');
       }
     } catch (e) {
       error.value = e.toString();
@@ -63,7 +56,25 @@ class OrderController extends GetxController {
       isLoading.value = false;
     }
   }
+
   Future<void> getOrderDetails(dynamic orderId, {bool navigate = true}) async {
+    final normalizedOrderId = orderId?.toString().trim() ?? '';
+    if (normalizedOrderId.isEmpty) {
+      orderDetailsError.value = 'Order ID not found';
+      return;
+    }
+
+    if (navigate) {
+      await Get.toNamed(
+        storeAwarePath(
+          Routes.ORDER_DETAIL,
+          '/order/$normalizedOrderId',
+        ),
+        arguments: {'order_id': normalizedOrderId},
+      );
+      return;
+    }
+
     if (isOrderDetailsLoading.value) return;
 
     isOrderDetailsLoading.value = true;
@@ -72,7 +83,7 @@ class OrderController extends GetxController {
 
     try {
       // Change this line according to your repository method.
-      final res = await OrderRepository().orderDetail(orderId);
+      final res = await OrderRepository().orderDetail(normalizedOrderId);
 
       if (res is Map && res['status'] == 'success') {
         final model = OrderDetailsResponse.fromJson(
@@ -80,10 +91,6 @@ class OrderController extends GetxController {
         );
 
         orderDetails.value = model.data;
-
-        if (navigate) {
-          Get.toNamed(Routes.ORDER_DETAIL);
-        }
       } else {
         orderDetailsError.value = res is Map
             ? (res['message']?.toString() ?? 'Failed to load order details')

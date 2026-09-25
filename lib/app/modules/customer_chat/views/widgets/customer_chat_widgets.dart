@@ -285,9 +285,14 @@ class OrderMessageCard extends StatelessWidget {
     final title = order.orderNumber?.trim().isNotEmpty == true
         ? order.orderNumber!.trim()
         : 'Order #${order.id ?? ''}'.trim();
-    final details = [order.status, order.total]
-        .where((item) => item != null && item!.trim().isNotEmpty)
-        .map((item) => item!.trim())
+    final details = [
+      order.status,
+      if ((order.total ?? '').trim().isNotEmpty) '৳${order.total}',
+      if (order.totalItems != null) '${order.totalItems} items',
+    ]
+        .whereType<String>()
+        .where((item) => item.trim().isNotEmpty)
+        .map((item) => item.trim())
         .join(' - ');
 
     return InkWell(

@@ -1543,6 +1543,8 @@ class ProductController extends GetxController {
 
         productDetail.value = model.data;
 
+
+
         if (navigate) {
           final slug = activeStoreSlug;
           final productRouteValue = productIdentifier.toString();
