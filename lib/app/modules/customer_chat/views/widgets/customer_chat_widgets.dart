@@ -310,14 +310,14 @@ class OrderMessageCard extends StatelessWidget {
                 child: Icon(
                   Icons.receipt_long_outlined,
                   size: 17,
-                  color: AppColors.primaryColor,
+                  color: AppColors.greenTextColor,
                 ),
               ),
               const TextSpan(text: '  '),
               TextSpan(
                 text: title,
                 style: TextStyle(
-                  color: AppColors.primaryColor,
+                  color: Colors.green,
                   fontWeight: FontWeight.w800,
                   decoration: TextDecoration.underline,
                 ),
@@ -326,7 +326,7 @@ class OrderMessageCard extends StatelessWidget {
                 TextSpan(
                   text: '  $details',
                   style: const TextStyle(
-                    color: Colors.black87,
+                    color: Colors.amber,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

@@ -110,11 +110,7 @@ class _ShopHeader extends StatelessWidget {
                       Text(address,
                           style: const TextStyle(color: Colors.black54)),
                     ],
-                    if (phone != null && phone.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text('Mobile: $phone',
-                          style: const TextStyle(color: Colors.black54)),
-                    ],
+
                   ],
                 ),
               ),
