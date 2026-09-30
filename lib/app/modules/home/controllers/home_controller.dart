@@ -6,6 +6,7 @@ import 'package:ecom_user_flutter/app/repositories/delivery_rep.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
 import 'package:ecom_user_flutter/app/modules/products/controller/product_controller.dart';
 import 'package:ecom_user_flutter/app/modules/preferred_store/controller/preferred_store_controller.dart';
+import 'package:ecom_user_flutter/app/modules/gamification/controller/gamification_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:get/get.dart';
@@ -59,6 +60,8 @@ class HomeController extends GetxController {
       Get.find<ProductController>().reloadStorefrontData(),
       if (Get.isRegistered<PreferredStoreController>())
         Get.find<PreferredStoreController>().refreshPreferredStores(),
+      if (Get.isRegistered<GamificationController>())
+        Get.find<GamificationController>().refreshActiveStoreChallenge(),
     ]);
   }
 

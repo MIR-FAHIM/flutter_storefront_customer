@@ -1,3 +1,5 @@
+import 'package:ecom_user_flutter/app/modules/gamification/binding/gamification_binding.dart';
+import 'package:ecom_user_flutter/app/modules/gamification/view/my_reward_races_view.dart';
 import 'package:ecom_user_flutter/app/modules/auth/login/bindings/login_binding.dart';
 import 'package:ecom_user_flutter/app/modules/auth/login/views/login_view.dart';
 import 'package:ecom_user_flutter/app/modules/auth/login/views/register_view.dart';
@@ -53,6 +55,9 @@ import '../modules/root/bindings/root_binding.dart';
 import '../modules/root/views/root_view.dart';
 import '../modules/splashscreen/bindings/splashscreen_binding.dart';
 import '../modules/splashscreen/views/splashscreen_view.dart';
+import 'package:ecom_user_flutter/app/modules/baki/binding/baki_binding.dart';
+import 'package:ecom_user_flutter/app/modules/baki/view/baki_view.dart';
+
 part 'app_routes.dart';
 
 void _activateStoreFromRoute() {
@@ -349,6 +354,16 @@ class AppPages {
       name: _Paths.SHOP_CHAT_THREAD,
       page: () => const CustomerChatThreadView(),
       binding: CustomerChatBinding(),
+    ),
+    GetPage(
+      name: _Paths.MY_REWARD_RACES,
+      page: () => const MyRewardRacesView(),
+      binding: GamificationBinding(),
+    ),
+    GetPage(
+      name: _Paths.BAKI_LEDGER,
+      page: () => const BakiLedgerView(),
+      binding: BakiBinding(),
     ),
   ];
 }

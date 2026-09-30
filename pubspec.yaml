@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev.
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 
-version: 4.6.52+152
+version: 4.6.59+159
 
 
 
@@ -131,6 +131,8 @@ dependencies:
   permission_handler: ^11.3.0
   dropdown_search: ^6.0.1
   mobile_scanner: ^6.0.11
+  confetti: ^0.8.0
+  percent_indicator: ^4.2.5
 
 
 dev_dependencies:

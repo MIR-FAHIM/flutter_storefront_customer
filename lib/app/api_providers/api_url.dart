@@ -68,6 +68,8 @@ class ApiClient {
   static const String featuredProduct = '$baseUrl/api/products/list/featured';
   static const String todayDealProducts =
       '$baseUrl/api/products/list/today-deal';
+  static const String hotDealProducts = '$baseUrl/api/products/list/hot-deal';
+  static const String buyAgainProducts = '$baseUrl/api/customer/buy-again';
   static const String productDetails = '$baseUrl/api/products/details/'; // {id}
   static const String updateProduct = '$baseUrl/api/products/update/'; // {id}
   static const String deleteProduct = '$baseUrl/api/products/delete/'; // {id}
@@ -100,6 +102,8 @@ class ApiClient {
       '$baseUrl/api/customer-preferences-store/set-active';
   static const String removeSellerPreference =
       '$baseUrl/api/customer-preferences-store/remove';
+  static const String customerStoreRelation =
+      '$baseUrl/api/customer-preferences-store/relation/'; // {storeId}
 
   // Notifications
   static const String notifications = '$baseUrl/api/notifications';
@@ -253,4 +257,17 @@ class ApiClient {
   static const String creditTransaction = '$baseUrl/api/transactions/credit';
   static const String debitTransaction = '$baseUrl/api/transactions/debit';
   static const String transactionReport = '$baseUrl/api/transactions/report';
+
+  // ==============================
+  // GAMIFICATION
+  // ==============================
+  static const String shopChallenge = '$baseUrl/api/customer/shops/'; // {store_slug}/challenge
+  static const String joinChallenge = '$baseUrl/api/customer/challenges/'; // {id}/join
+  static const String myChallenges = '$baseUrl/api/customer/challenges/my'; // ?user_id={user_id}
+  static const String claimReward = '$baseUrl/api/customer/rewards/'; // {claim_id}/claim
+  
+  // ==============================
+  // BAKI (DUE)
+  // ==============================
+  static const String customerBakiLedger = '$baseUrl/api/seller/stores/'; // {store_id}/baki/customer/{customer_id}?page=1
 }

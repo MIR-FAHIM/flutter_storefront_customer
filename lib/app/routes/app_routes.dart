@@ -53,6 +53,8 @@ abstract class Routes {
   static const QR_SCAN = _Paths.QR_SCAN;
   static const SHOP_CHAT_CONVERSATIONS = _Paths.SHOP_CHAT_CONVERSATIONS;
   static const SHOP_CHAT_THREAD = _Paths.SHOP_CHAT_THREAD;
+  static const MY_REWARD_RACES = _Paths.MY_REWARD_RACES;
+  static const BAKI_LEDGER = _Paths.BAKI_LEDGER;
 }
 
 abstract class _Paths {
@@ -111,4 +113,6 @@ abstract class _Paths {
   static const QR_SCAN = '/qr-scan';
   static const SHOP_CHAT_CONVERSATIONS = '/SHOP_CHAT_CONVERSATIONS';
   static const SHOP_CHAT_THREAD = '/customer/chat/thread';
+  static const MY_REWARD_RACES = '/my-reward-races';
+  static const BAKI_LEDGER = '/baki-ledger';
 }

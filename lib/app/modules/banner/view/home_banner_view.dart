@@ -1,10 +1,12 @@
 import 'package:ecom_user_flutter/app/api_providers/company_data.dart';
 import 'package:ecom_user_flutter/app/models/ecom/banner_model.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
+import 'package:ecom_user_flutter/app/modules/gamification/view/storefront_gamification_header.dart';
 import 'package:ecom_user_flutter/app/modules/review/view/shop_reviews_section.dart';
 import 'package:ecom_user_flutter/app/models/ecom/product/shop_model.dart';
 import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/services/store_context_service.dart';
+import 'package:ecom_user_flutter/common/Color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -50,134 +52,195 @@ class _ShopHeader extends StatelessWidget {
       shop.area?.toString(),
       shop.district?.toString()
     ].where((value) => value != null && value.trim().isNotEmpty).join(', ');
-    final phone = shop.phone?.trim();
     final rating = shop.averageReviewRating.toDouble().toStringAsFixed(1);
     final totalReviews = shop.totalReviews;
-    final reviewLabel = totalReviews == 1 ? 'review' : 'reviews';
     final storeContext = Get.find<StoreContextService>();
     final chatShopId = shop.id ?? storeContext.activeStoreId.value;
+    final shopName = (shop.shopName ?? shop.name ?? 'Preferred Shop'.tr).trim();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (bannerUrl == null && fallbackBanners.isNotEmpty)
-          _ApiCarousel(banners: fallbackBanners),
-        if (bannerUrl != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: SizedBox(
-              height: 140,
-              width: double.infinity,
-              child: Image.network(
-                bannerUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const ColoredBox(
-                  color: Color(0xffeeeeee),
-                ),
-              ),
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+        ],
+      ),
+      child: Column(
+        children: [
+          // Cover Photo & Logo Section
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.white,
-                child: CircleAvatar(
-                  radius: 29,
-                  backgroundImage:
-                      logoUrl == null ? null : NetworkImage(logoUrl),
-                  child: logoUrl == null
-                      ? const Icon(Icons.storefront_outlined)
-                      : null,
+              // Cover
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: SizedBox(
+                  height: 120,
+                  width: double.infinity,
+                  child: bannerUrl != null
+                      ? Image.network(
+                          bannerUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xffeeeeee)),
+                        )
+                      : (fallbackBanners.isNotEmpty
+                          ? _ApiCarousel(banners: fallbackBanners, height: 120)
+                          : const ColoredBox(color: Color(0xffeeeeee))),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (shop.shopName ?? shop.name ?? 'Preferred Shop').trim(),
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w700),
-                    ),
-                    if (address.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(address,
-                          style: const TextStyle(color: Colors.black54)),
+              // Overlapping Logo
+              Positioned(
+                bottom: -28,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.grey.shade100,
+                    backgroundImage: logoUrl == null ? null : NetworkImage(logoUrl),
+                    child: logoUrl == null
+                        ? const Icon(Icons.storefront_outlined, size: 32, color: Colors.grey)
+                        : null,
+                  ),
+                ),
+              ),
+              // Gamification Widget overlapping bottom right
+              Positioned(
+                bottom: -16,
+                right: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
                     ],
-
-                  ],
+                  ),
+                  child: const StorefrontRewardAction(),
                 ),
               ),
             ],
           ),
-        ),
-        if (shop.id != null || chatShopId != null) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              if (shop.id != null)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => Get.to(
-                      () => ShopReviewsScreen(
-                        shopId: shop.id!,
-                        shopName: shop.shopName ?? shop.name,
-                      ),
-                    ),
-                    icon: const Icon(Icons.rate_review_outlined),
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.star_rounded,
-                            size: 18, color: Colors.amber.shade700),
-                        const SizedBox(width: 4),
-                        Text('$rating ($totalReviews $reviewLabel)'),
-                      ],
-                    ),
-                  ),
+          
+          const SizedBox(height: 36), // Spacer for overlapping logo
+          
+          // Store Information
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  shopName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-              if (shop.id != null && chatShopId != null)
-                const SizedBox(width: 10),
-              if (chatShopId != null)
-                SizedBox(
-                  height: 48,
-                  width: 54,
-                  child: Tooltip(
-                    message: 'Shop Chat',
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: EdgeInsets.zero,
+                if (address.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 14, color: Colors.black54),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          address,
+                          style: const TextStyle(color: Colors.black54, fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      onPressed: () => Get.toNamed(
-                        Routes.SHOP_CHAT_THREAD,
-                        arguments: {'shop_id': chatShopId},
-                      ),
-                      child: const Icon(Icons.chat_bubble_outline_rounded),
-                    ),
+                    ],
                   ),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
-        ],
-        if (shop.id == null && chatShopId == null) ...[
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Get.toNamed(Routes.SHOP_CHAT_CONVERSATIONS),
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: const Text('Shop Chat'),
+          
+          const SizedBox(height: 16),
+          Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
+          
+          // Quick Actions Row
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (shop.id != null)
+                  _buildActionItem(
+                    icon: Icons.star_rounded,
+                    label: '$rating ($totalReviews)',
+                    color: Colors.amber.shade700,
+                    onTap: () => Get.to(() => ShopReviewsScreen(shopId: shop.id!, shopName: shopName)),
+                  ),
+                if (chatShopId != null)
+                  _buildActionItem(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: 'Shop Chat'.tr,
+                    color: AppColors.primaryColor,
+                    onTap: () => Get.toNamed(Routes.SHOP_CHAT_THREAD, arguments: {'shop_id': chatShopId}),
+                  ),
+                if (shop.id != null)
+                  _buildActionItem(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Due'.tr,
+                    color: Colors.red,
+                    onTap: () => Get.toNamed(Routes.BAKI_LEDGER, arguments: {'shop_id': shop.id}),
+                  ),
+                if (shop.id == null && chatShopId == null)
+                  _buildActionItem(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: 'Shop Chat'.tr,
+                    color: AppColors.primaryColor,
+                    onTap: () => Get.toNamed(Routes.SHOP_CHAT_CONVERSATIONS),
+                  ),
+              ],
             ),
           ),
         ],
-      ],
+      ),
+    );
+  }
+
+  Widget _buildActionItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -189,15 +252,15 @@ String? _mediaUrl(MediaFile? media) {
   final fileName = media.fileName?.trim();
   if (fileName == null || fileName.isEmpty) return null;
   final base = CompanyData.image_file_url.endsWith('/')
-      ? CompanyData.image_file_url
-          .substring(0, CompanyData.image_file_url.length - 1)
+      ? CompanyData.image_file_url.substring(0, CompanyData.image_file_url.length - 1)
       : CompanyData.image_file_url;
   return '$base/${fileName.startsWith('/') ? fileName.substring(1) : fileName}';
 }
 
 class _ApiCarousel extends StatefulWidget {
-  const _ApiCarousel({required this.banners});
+  const _ApiCarousel({required this.banners, this.height = 140});
   final List<BannerData> banners;
+  final double height;
 
   @override
   State<_ApiCarousel> createState() => _ApiCarouselState();
@@ -220,9 +283,9 @@ class _ApiCarouselState extends State<_ApiCarousel> {
     return Column(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
           child: SizedBox(
-            height: 140, // adjust to your design (screenshot looks around this)
+            height: widget.height,
             width: double.infinity,
             child: PageView.builder(
               controller: _page,
@@ -232,8 +295,11 @@ class _ApiCarouselState extends State<_ApiCarousel> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        _Dots(count: count, index: _index),
+        // Dots only if not acting as a fallback background banner
+        if (widget.height == 140) ...[
+          const SizedBox(height: 8),
+          _Dots(count: count, index: _index),
+        ]
       ],
     );
   }
@@ -245,7 +311,6 @@ class _BannerImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Preferred: image.url, else build from file_name + base url
     final imageUrl = b.image?.resolvedUrl(baseUrl: CompanyData.image_file_url);
 
     if (imageUrl == null || imageUrl.trim().isEmpty) {
@@ -259,14 +324,13 @@ class _BannerImage extends StatelessWidget {
 
     return Image.network(
       imageUrl,
-      fit: BoxFit.cover, // full width banner style
+      fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
       errorBuilder: (_, __, ___) => Container(
         color: Colors.grey.shade100,
         child: const Center(
-          child: Icon(Icons.broken_image_outlined,
-              size: 42, color: Colors.black54),
+          child: Icon(Icons.broken_image_outlined, size: 42, color: Colors.black54),
         ),
       ),
       loadingBuilder: (_, child, progress) {
@@ -274,8 +338,7 @@ class _BannerImage extends StatelessWidget {
         return Container(
           color: Colors.grey.shade100,
           child: const Center(
-            child: SizedBox(
-                height: 22, width: 22, child: CircularProgressIndicator()),
+            child: SizedBox(height: 22, width: 22, child: CircularProgressIndicator()),
           ),
         );
       },

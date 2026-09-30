@@ -8,6 +8,7 @@ import 'package:ecom_user_flutter/app/routes/app_pages.dart';
 import 'package:ecom_user_flutter/app/routes/store_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ecom_user_flutter/app/modules/gamification/view/cart_gamification_nudge.dart';
 
 class CartView extends GetView<CartController> {
   const CartView({super.key});
@@ -93,6 +94,12 @@ class CartView extends GetView<CartController> {
                     itemCount: items.length,
                     total: controller.totalAmount.value,
                   ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CartGamificationNudge(cartTotal: controller.totalAmount.value.toDouble()),
                 ),
               ),
               SliverPadding(

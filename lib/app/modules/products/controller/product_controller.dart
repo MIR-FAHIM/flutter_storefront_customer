@@ -70,6 +70,8 @@ class ProductController extends GetxController {
   int _featuredProductsRequestToken = 0;
   int _homeAllProductsRequestToken = 0;
   int _todayDealProductsRequestToken = 0;
+  int _buyAgainProductsRequestToken = 0;
+  int _hotDealProductsRequestToken = 0;
 
   // ---------------------------------------------------------------------------
   // Dropdown data and shared selected filters
@@ -190,6 +192,20 @@ class ProductController extends GetxController {
   final hasMoreTodayDealProducts = true.obs;
 
   // ---------------------------------------------------------------------------
+  // Buy Again products state
+  // ---------------------------------------------------------------------------
+
+  final buyAgainProducts = <ProductModel>[].obs;
+  final isBuyAgainLoading = false.obs;
+
+  // ---------------------------------------------------------------------------
+  // Hot Deal products state
+  // ---------------------------------------------------------------------------
+
+  final hotDealProducts = <ProductModel>[].obs;
+  final isHotDealLoading = false.obs;
+
+  // ---------------------------------------------------------------------------
   // Home category section state
   // ---------------------------------------------------------------------------
 
@@ -228,6 +244,8 @@ class ProductController extends GetxController {
     getHomeAllProducts(reset: true);
     getFeaturedProducts(reset: true);
     getTodayDealProducts(reset: true);
+    getBuyAgainProducts(reset: true);
+    getHotDealProducts(reset: true);
 
     babyCareProductsController(reset: true);
     groceryProductsController(reset: true);
@@ -279,6 +297,8 @@ class ProductController extends GetxController {
       getHomeAllProducts(reset: true),
       getFeaturedProducts(reset: true),
       getTodayDealProducts(reset: true),
+      getBuyAgainProducts(reset: true),
+      getHotDealProducts(reset: true),
       babyCareProductsController(reset: true),
       groceryProductsController(reset: true),
       healthBeautyCareProductsController(reset: true),
@@ -306,6 +326,8 @@ class ProductController extends GetxController {
     products.clear();
     homeAllProducts.clear();
     todayDealProducts.clear();
+    buyAgainProducts.clear();
+    hotDealProducts.clear();
     babyCareProducts.clear();
     groceryProducts.clear();
     medicineProducts.clear();
@@ -1501,6 +1523,139 @@ class ProductController extends GetxController {
 
   Future<void> loadMoreTodayDealProducts() async {
     await getTodayDealProducts(reset: false);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Buy Again products methods
+  // ---------------------------------------------------------------------------
+
+  Future<void> getBuyAgainProducts({bool reset = false}) async {
+    final token = Get.isRegistered<AuthService>()
+        ? Get.find<AuthService>().currentUser.value.data?.token
+        : null;
+
+    if (token == null || token.trim().isEmpty) {
+      buyAgainProducts.clear();
+      return;
+    }
+
+    final requestToken = ++_buyAgainProductsRequestToken;
+
+    if (reset) {
+      buyAgainProducts.clear();
+    }
+
+    isBuyAgainLoading.value = true;
+
+    try {
+      final res = await _repo.getBuyAgainProducts(
+        page: 1,
+        perPage: 8,
+        storeSlug: activeStoreSlug,
+      );
+
+      if (requestToken != _buyAgainProductsRequestToken) return;
+
+      if (res is Map &&
+          (res['status'] == 'success' ||
+              res['status'] == true ||
+              res['success'] == true)) {
+        final data = res['data'];
+        final List<ProductModel> parsedItems = [];
+        if (data is Map && data['data'] is List) {
+          parsedItems.addAll(
+            (data['data'] as List)
+                .whereType<Map>()
+                .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))),
+          );
+        } else if (data is List) {
+          parsedItems.addAll(
+            data
+                .whereType<Map>()
+                .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))),
+          );
+        } else if (data is Map && data['items'] is List) {
+          parsedItems.addAll(
+            (data['items'] as List)
+                .whereType<Map>()
+                .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))),
+          );
+        }
+        buyAgainProducts.assignAll(parsedItems);
+      } else {
+        buyAgainProducts.clear();
+      }
+    } catch (_) {
+      if (requestToken == _buyAgainProductsRequestToken) {
+        if (reset) buyAgainProducts.clear();
+      }
+    } finally {
+      if (requestToken == _buyAgainProductsRequestToken) {
+        isBuyAgainLoading.value = false;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hot Deal products methods
+  // ---------------------------------------------------------------------------
+
+  Future<void> getHotDealProducts({bool reset = false}) async {
+    final requestToken = ++_hotDealProductsRequestToken;
+
+    if (reset) {
+      hotDealProducts.clear();
+    }
+
+    isHotDealLoading.value = true;
+
+    try {
+      final res = await _repo.getHotDealProducts(
+        page: 1,
+        perPage: 10,
+        storeSlug: activeStoreSlug,
+      );
+
+      if (requestToken != _hotDealProductsRequestToken) return;
+
+      if (res is Map &&
+          (res['status'] == 'success' ||
+              res['status'] == true ||
+              res['success'] == true)) {
+        final data = res['data'];
+        final List<ProductModel> parsedItems = [];
+        if (data is Map && data['data'] is List) {
+          parsedItems.addAll(
+            (data['data'] as List)
+                .whereType<Map>()
+                .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))),
+          );
+        } else if (data is List) {
+          parsedItems.addAll(
+            data
+                .whereType<Map>()
+                .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))),
+          );
+        } else if (data is Map && data['items'] is List) {
+          parsedItems.addAll(
+            (data['items'] as List)
+                .whereType<Map>()
+                .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))),
+          );
+        }
+        hotDealProducts.assignAll(parsedItems);
+      } else {
+        hotDealProducts.clear();
+      }
+    } catch (_) {
+      if (requestToken == _hotDealProductsRequestToken) {
+        if (reset) hotDealProducts.clear();
+      }
+    } finally {
+      if (requestToken == _hotDealProductsRequestToken) {
+        isHotDealLoading.value = false;
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

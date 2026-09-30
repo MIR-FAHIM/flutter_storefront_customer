@@ -190,6 +190,55 @@ getBrands() async {
     return response;
   }
 
+  Future<dynamic> getBuyAgainProducts({
+    int? page,
+    int? perPage,
+    String? storeSlug,
+  }) async {
+    final APIManager manager = APIManager();
+    final Map<String, dynamic> params = {};
+
+    if (page != null) params['page'] = page;
+    if (perPage != null) params['per_page'] = perPage;
+    if (storeSlug != null && storeSlug.trim().isNotEmpty) {
+      params['store_slug'] = storeSlug.trim();
+    }
+
+    final token = Get.isRegistered<AuthService>()
+        ? Get.find<AuthService>().currentUser.value.data?.token
+        : null;
+
+    final response = await manager.getWithHeaderAndParam(
+      ApiClient.buyAgainProducts,
+      params: params,
+      token: token,
+    );
+
+    return response;
+  }
+
+  Future<dynamic> getHotDealProducts({
+    int? page,
+    int? perPage,
+    String? storeSlug,
+  }) async {
+    final APIManager manager = APIManager();
+    final Map<String, dynamic> params = {};
+
+    if (page != null) params['page'] = page;
+    if (perPage != null) params['per_page'] = perPage;
+    if (storeSlug != null && storeSlug.trim().isNotEmpty) {
+      params['store_slug'] = storeSlug.trim();
+    }
+
+    final response = await manager.getWithHeaderAndParam(
+      ApiClient.hotDealProducts,
+      params: params,
+    );
+
+    return response;
+  }
+
   Future<dynamic> getFilterProducts({
     int? page,
     int? perPage,

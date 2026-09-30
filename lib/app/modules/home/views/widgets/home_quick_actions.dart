@@ -84,16 +84,16 @@ class HomeQuickActionsRow extends StatelessWidget {
               },
             ),
           ),
-          // Expanded(
-          //   child: _QuickActionItem(
-          //     icon: Icons.local_shipping_outlined,
-          //     label: "Free delivery",
-          //     color: _freeDeliveryColor,
-          //     onTap: () {
-          //       // Later: Get.toNamed(Routes.FREE_DELIVERY);
-          //     },
-          //   ),
-          // ),
+          Expanded(
+            child: _QuickActionItem(
+              icon: Icons.emoji_events_outlined,
+              label: "Reward Races",
+              color: const Color(0xFFF2C94C), // Golden color
+              onTap: () {
+                Get.toNamed(Routes.MY_REWARD_RACES);
+              },
+            ),
+          ),
         ],
       ),
     );

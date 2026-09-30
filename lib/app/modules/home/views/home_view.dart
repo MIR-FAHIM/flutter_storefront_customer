@@ -15,6 +15,8 @@ import 'package:ecom_user_flutter/app/modules/products/view/home_featured_produc
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/baby_care_home.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/grocery_home.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_all_products.dart';
+import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_buy_again_section.dart';
+import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_hot_deal_section.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_fasion_product.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/home_restaurant_products.dart';
 import 'package:ecom_user_flutter/app/modules/products/view/widgets/medicine_home.dart';
@@ -177,7 +179,6 @@ class HomeView extends GetView<HomeController> {
                     const SliverToBoxAdapter(
                       child: SizedBox(height: 12),
                     ),
-
                     // Main banner, same position as PDF
                     const SliverToBoxAdapter(
                       child: Padding(
@@ -241,6 +242,16 @@ class HomeView extends GetView<HomeController> {
                         ),
                       );
                     }),
+
+                    // Buy Again section (only shows if there is data)
+                    const SliverToBoxAdapter(
+                      child: HomeBuyAgainSection(),
+                    ),
+
+                    // Hot Deal section (only shows if there is data)
+                    const SliverToBoxAdapter(
+                      child: HomeHotDealSection(),
+                    ),
 
                     // Featured Product section, PDF uses #00509D with low opacity
                     SliverToBoxAdapter(

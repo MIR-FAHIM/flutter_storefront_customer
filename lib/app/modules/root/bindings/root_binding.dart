@@ -1,3 +1,4 @@
+import 'package:ecom_user_flutter/app/modules/gamification/controller/gamification_controller.dart';
 import 'package:ecom_user_flutter/app/modules/banner/controller/banner_controller.dart';
 import 'package:ecom_user_flutter/app/modules/cart/controller/cart_controller.dart';
 import 'package:ecom_user_flutter/app/modules/category/controller/category_controller.dart';
@@ -45,6 +46,11 @@ class RootBinding extends Bindings {
 
     Get.lazyPut<ProductController>(
       () => ProductController(),
+    );
+
+    Get.lazyPut<GamificationController>(
+      () => GamificationController(),
+      fenix: true,
     );
   }
 }
